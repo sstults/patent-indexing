@@ -1,0 +1,7 @@
+1. Unzip categories.zip and ipg090707.zip
+
+2. Run: "./convert.sh ipg090707.xml ipg090707.out"
+
+3. Fire up Solr on localhost (or point post.sh to the correct host)
+
+4. Run: "./post.sh ipg090707.out"
