@@ -1,0 +1,7 @@
+[home_tange]
+name=tange's Home Project (CentOS_CentOS-5)
+type=rpm-md
+baseurl=http://download.opensuse.org/repositories/home:/tange/CentOS_CentOS-5/
+gpgcheck=1
+gpgkey=http://download.opensuse.org/repositories/home:/tange/CentOS_CentOS-5/repodata/repomd.xml.key
+enabled=1

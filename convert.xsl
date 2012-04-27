@@ -1,22 +1,35 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<xsl:output method="xml" version="1.0" indent="yes"/>
+<?xml version="1.0" encoding="utf-8"?>
 
-<xsl:strip-space elements="field" />
+<xsl:stylesheet version="2.0"
+              xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-<xsl:template match="/">
-  <add>
-  <xsl:apply-templates/>
-  </add>
+<xsl:import href="cals_table.xsl"/>
+
+<xsl:output
+  method="xml"
+  omit-xml-declaration="yes"
+  indent="no"/>
+
+<xsl:template match="patents">
+  {
+     <!-- just grab the patent files, don't try and index the genetic sequences or other objects. -->
+      <xsl:for-each select="us-patent-grant">
+        <xsl:apply-templates select="."/>
+        <xsl:if test="not(position() = last())">,</xsl:if>
+      </xsl:for-each>
+  }
 </xsl:template>
 
 <xsl:template match="us-patent-grant">
-  <doc>
-    <field name="document_type_s"><xsl:value-of select="@id" /></field>
-
-    <xsl:apply-templates select="@date-publ|@date-produced"/>
-    <xsl:apply-templates select="child::*" />
-  </doc>
+  "add": { "doc": {
+    "document_type":"<xsl:value-of select="@id" />",
+    <xsl:apply-templates select="@date-publ"/>,
+    <xsl:apply-templates select="@date-produced"/>,
+    <xsl:for-each select="us-bibliographic-data-grant|abstract|description|claims">
+      <xsl:apply-templates select="." />
+      <xsl:if test="not(position() = last())">,</xsl:if>
+    </xsl:for-each>
+  }}
 </xsl:template>
 
 <xsl:template match="@date-publ|@date-produced">
@@ -24,34 +37,22 @@
   <xsl:variable name="date_m" select="substring(.,5,2)" />
   <xsl:variable name="date_d" select="substring(.,7,2)" />
   <xsl:variable name="name"><xsl:value-of select='translate(name(), "-", "_")'/></xsl:variable>
-
-
-  <xsl:element name="field">
-    <xsl:attribute name="name"><xsl:value-of select='$name'/></xsl:attribute>
-    <xsl:value-of select="$date_y"/>-<xsl:value-of select="$date_m"/>-<xsl:value-of select="$date_d"/>T00:00:01Z</xsl:element>  
-
-  <xsl:element name="field">
-    <xsl:attribute name="name"><xsl:value-of select='$name'/>_s</xsl:attribute>
-    <xsl:value-of select="$date_y"/>-<xsl:value-of select="$date_m"/>-<xsl:value-of select="$date_d"/></xsl:element>  
-
-  <xsl:element name="field">
-    <xsl:attribute name="name"><xsl:value-of select='$name'/>_i</xsl:attribute>
-    <xsl:value-of select="$date_y"/><xsl:value-of select="$date_m"/><xsl:value-of select="$date_d"/></xsl:element>  
-
-  <xsl:element name="field">
-    <xsl:attribute name="name"><xsl:value-of select='$name'/>_facet_s</xsl:attribute>0/<xsl:value-of select="$date_y"/></xsl:element>  
-
-  <xsl:element name="field">
-    <xsl:attribute name="name"><xsl:value-of select='$name'/>_facet_s</xsl:attribute>1/<xsl:value-of select="$date_y"/>/<xsl:value-of select="$date_m"/></xsl:element>  
-
+    "<xsl:value-of select='$name'/>":"<xsl:value-of select="$date_y"/>-<xsl:value-of select="$date_m"/>-<xsl:value-of select="$date_d"/>T00:00:01Z",
+    "<xsl:value-of select='$name'/>_s":"<xsl:value-of select="$date_y"/>-<xsl:value-of select="$date_m"/>-<xsl:value-of select="$date_d"/>",
+    "<xsl:value-of select='$name'/>_i":"<xsl:value-of select="$date_y"/><xsl:value-of select="$date_m"/><xsl:value-of select="$date_d"/>",
+    "<xsl:value-of select='$name'/>_facet":["0/<xsl:value-of select="$date_y"/>","1/<xsl:value-of select="$date_y"/>/<xsl:value-of select="$date_m"/>"]
 </xsl:template>
 
 <xsl:template match="us-bibliographic-data-grant">
-    <field name="id"><xsl:value-of select="publication-reference/document-id/doc-number" /></field>
-    <field name="doc_number_s"><xsl:value-of select="publication-reference/document-id/doc-number" /></field>  
-    <field name="invention_title_txt"><xsl:value-of select="invention-title" /></field>
-    <field name="assignee_orgname_s"><xsl:value-of select="assignees/assignee/addressbook/orgname" /></field>    
-    <xsl:apply-templates select="classification-national/main-classification|parties/applicants/applicant/addressbook"/>
+    "id":"<xsl:value-of select="publication-reference/document-id/doc-number" />",
+    "doc_number":"<xsl:value-of select="publication-reference/document-id/doc-number" />",
+    <xsl:apply-templates select="invention-title" />,
+    "assignee_orgname_s":"<xsl:value-of select="assignees/assignee/addressbook/orgname" />",
+    <xsl:apply-templates select="classification-national/main-classification" />,
+    <xsl:for-each select="parties/applicants/applicant/addressbook">
+      <xsl:apply-templates select="." />
+      <xsl:if test="not(position() = last())">,</xsl:if>
+    </xsl:for-each> 
 </xsl:template>
 
 <!-- Category Lookup -->
@@ -59,47 +60,214 @@
 <xsl:variable name="cat-top" select="document('categories.xml')/categories"/>
 <xsl:template match="categories">
   <xsl:param name="catid"/>
-  <xsl:apply-templates select="key('cat-lookup', $catid)/term"/>
+  <xsl:for-each select="key('cat-lookup', $catid)/term">
+    <xsl:apply-templates select="."/>
+    <xsl:if test="not(position() = last())">,</xsl:if>
+  </xsl:for-each>
+
 </xsl:template>
 
 <xsl:template match="term">
-  <field name="category_facet_s"><xsl:value-of select="."/></field>
+  "<xsl:value-of select="."/>"
 </xsl:template>
 
-<xsl:template match="main-classification">
-  <xsl:variable name="main_class_m" select="substring(.,1,3)" />
-  <xsl:variable name="main_class_s" select="substring(.,4,4)" />
-  <field name="main_classification_s"><xsl:value-of select="." /></field>
-  <field name="main_classification_facet_s"><xsl:value-of select="$main_class_m"/>/<xsl:value-of select="$main_class_s"/></field>
+  <xsl:template match="main-classification">
+    <xsl:variable name="main_class_m"  select='substring(concat(translate(substring(.,1,3), " ", "0"), "000"), 1, 3)' />
+    <xsl:variable name="main_class_s1" select='substring(concat("000", translate(substring(.,4,3), " ", "0")), string-length(substring(.,4,3)) + 1, 3)'/>
+    <xsl:variable name="main_class_s2" select='substring(concat("000", translate(substring(.,7,3), " ", "0")), string-length(substring(.,7,3)) + 1, 3)' />
 
-  <!-- Convert spaces in the category code to 0, and pad 0's to the left so that it is 9 digits long -->
-  <xsl:variable name="catcode"><xsl:value-of select='substring(concat(translate(., " ", "0"), "000000000"), 1, 9)'/></xsl:variable>
-  <!-- now convert that into values in the categories.xml lookup file -->
-  <xsl:apply-templates select="$cat-top">
-    <xsl:with-param name="catid" select="$catcode"/>
-  </xsl:apply-templates>
-</xsl:template>
+    <!-- If the category ends with a letter, forward pad the subclasses with 0, if it doesn't, just pad with 0's on the end -->
+    <xsl:variable name="catcode">
+      <xsl:choose>
+      <xsl:when test="matches(., '[A-Z]$')">
+        <xsl:value-of select='concat($main_class_m, $main_class_s1, $main_class_s2)'/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select='substring(concat(translate(., " ", "0"), "000000000"), 1, 9)'/></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
+    <!-- If you skill can't find the code, then fall back to just the main class -->
+    <xsl:variable name="check1">
+       <xsl:apply-templates select="$cat-top"><xsl:with-param name="catid" select="$catcode"/></xsl:apply-templates>
+    </xsl:variable>
+    <xsl:variable name="category_facet">
+      <xsl:choose>
+      <xsl:when test="$check1 != ''">
+        <xsl:value-of select='$check1'/>
+       </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="catmain" select='substring(concat(translate(substring(.,1,3), " ", "0"), "000000000"), 1, 9)'/>
+        <xsl:apply-templates select="$cat-top"><xsl:with-param name="catid" select="$catmain"/></xsl:apply-templates>
+      </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    "main_classification":"<xsl:value-of select="." />",
+    "main_classification_std":"<xsl:value-of select="$catcode"/>",
+    "category_facet":[<xsl:value-of select="$category_facet"/>]
+  </xsl:template>
 
 <xsl:template match="further-classification">
-  <field name="further_classification_s"><xsl:value-of select="." /></field>
+  "further_classification":"<xsl:value-of select="." />"
 </xsl:template>
 
 <xsl:template match="citation/patcit/document-id/doc-number">
-  <field name="citation_s"><xsl:value-of select="." /></field>
+  "citation_s":"<xsl:value-of select="." />"
 </xsl:template>
 
 <xsl:template match="parties/applicants/applicant/addressbook">
-  <field name="applicant_inventor_s"><xsl:value-of select='concat(first-name," ",last-name)' /></field>
-  <field name="applicant_inventor_facet_s"><xsl:value-of select='concat(last-name,", ",first-name)' /></field>
-  <field name="applicant_inventor_last_name_s"><xsl:value-of select="last-name" /></field>
-  <field name="applicant_inventor_first_name_s"><xsl:value-of select="first-name" /></field>
+  "applicant_inventor":"<xsl:value-of select='concat(first-name," ",last-name)' />",
+  "applicant_inventor_facet":"<xsl:value-of select='concat(last-name,", ",first-name)' />",
+  "applicant_inventor_last_name":"<xsl:value-of select="last-name" />",
+  "applicant_inventor_first_name":"<xsl:value-of select="first-name" />"
 </xsl:template>
 
-<xsl:template match="invention-title|abstract|description|claim-text">
-      <xsl:element name="field">
-	<xsl:attribute name="name"><xsl:value-of select='translate(name(), "-", "_")'/>_txt</xsl:attribute>
-	<xsl:value-of select="."/>
-      </xsl:element>
+<xsl:template match="invention-title|abstract|description">
+  "<xsl:value-of select='translate(name(), "-", "_")'/>_raw":
+    "<xsl:call-template name="escape"><xsl:with-param name="e" select="."/></xsl:call-template>",
+  "<xsl:value-of select='translate(name(), "-", "_")'/>_html":"<xsl:apply-templates/>"
+</xsl:template>
+
+<xsl:template match="claims">
+  "claims_raw":"   <xsl:call-template name="escape"><xsl:with-param name="e" select="."/></xsl:call-template>",
+  "claims_html":"
+    <ol class='claims'>
+        <xsl:apply-templates/>
+    </ol>"
+</xsl:template>
+
+<xsl:template match="claim">
+  <xsl:variable name="num" select="number(@num)"/>
+  <li value='{$num}'>
+    <xsl:apply-templates />
+  </li>
+</xsl:template>
+
+  <xsl:template match="claim/claim-text">
+    <!-- trim off a leading number, period and space from the beginning of the claim text"
+         so that  "1. A bla bla " becomes just "A bla bla" -->
+  <xsl:for-each select="node()">
+    <xsl:choose>
+      <xsl:when test="self::text()">
+        <!-- trim leading numbers off the claims text.-->
+        <xsl:if test="position() &lt; 3">
+          <!--
+          <xsl:call-template name="trim-leading-numbers">
+            <xsl:with-param name="text" select="." />
+          </xsl:call-template>
+          -->
+          <xsl:value-of select="replace(., '^[0-9]{1,4}\.? ?', '')"/>
+        </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates select="."/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template match="claim-text">
+        <blockquote class='claim-text'>
+          <xsl:apply-templates />
+        </blockquote>
+  </xsl:template>
+
+
+<!-- NOT USED IN US: best-mode, disclosure, background-art, technical-field, mode-for-invention -->
+<xsl:template match="disclosure|sequence-list-text|technical-field|background-art|description-of-drawings|best-mode|mode-for-invention|industrial-applicability|tech-problem|tech-solution|advantageous-effects">
+  <xsl:variable name="class"><xsl:value-of select="name()"/></xsl:variable>
+  <div class='{$class}'>
+    <xsl:apply-templates/>
+  </div>
+</xsl:template>
+
+<xsl:template match="heading">
+  <xsl:variable name="el_name">h<xsl:value-of select="@level"/></xsl:variable>
+  <xsl:element name="{$el_name}">
+    <xsl:apply-templates/>
+  </xsl:element>
+</xsl:template>
+
+<xsl:template match="smallcaps">
+  <span class='smallcaps'>
+    <xsl:apply-templates/>
+  </span>
+</xsl:template>
+
+<xsl:template match="p | b | i | o | u | sup | sub | ol | ul | li | br | dl | table ">
+  <xsl:element name="{name()}">
+    <xsl:apply-templates/>
+  </xsl:element>
+</xsl:template>
+
+<xsl:template match="text()">
+   <xsl:call-template name="escape"><xsl:with-param name="e" select="."/></xsl:call-template>
+</xsl:template>
+
+  <!-- we must escape the \ character, if it occurs naturally in the next, because the json output considers
+       it an escape character, and will bomb if it occurs out of context when loading into solr, same is
+       true of a double quote. ) -->
+<xsl:template name="escape">
+  <xsl:param name="e"/>
+
+  <!-- This the xslt2 version of the escape method -->
+
+  <xsl:variable name="txt" select="replace($e, '\\', '\\\\')"/>
+  <xsl:value-of select="replace($txt, '&quot;', '\\&quot;')"/>
+
+    <!-- This the xslt1 version of the escape method -->
+  <!--
+  <xsl:variable name="txt">
+    <xsl:call-template name="str:replace">
+        <xsl:with-param name="string" select="$e"/>
+        <xsl:with-param name="search">\</xsl:with-param>
+        <xsl:with-param name="replace">\\</xsl:with-param>
+    </xsl:call-template>
+    <xsl:call-template name="str:replace">
+        <xsl:with-param name="string" select="$e" />
+        <xsl:with-param name="search">\</xsl:with-param>
+        <xsl:with-param name="replace">\\</xsl:with-param>
+      </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable name="escaped">
+    <xsl:call-template name="str:replace">
+        <xsl:with-param name="string" select="$txt" />
+        <xsl:with-param name="search">"</xsl:with-param>
+        <xsl:with-param name="replace">\"</xsl:with-param>
+      </xsl:call-template>
+  </xsl:variable>
+  <xsl:value-of select="$escaped"/>
+  -->
+
+</xsl:template>
+
+
+  <!-- trim off a leading number, period and space from the beginning of the claim text"
+       so that  "1. A bla bla " becomes just "A bla bla" -->
+  <!-- Provides string replacement when using xsl1 -->
+  <xsl:template name="trim-leading-numbers">
+    <xsl:param name="text" />
+    <xsl:choose>
+      <xsl:when test="$text = ''">
+        <xsl:value-of select="$text" />
+      </xsl:when>
+      <xsl:when test="contains('0123456789. ', substring($text, 1, 1))">
+        <xsl:call-template name="trim-leading-numbers">
+          <xsl:with-param name="text" select="substring($text,2)" />
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$text" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+
+<!-- TABLES (please see cals_table.xsl) -->
+<xsl:template match="tables">
+  <div class="tables">
+    <xsl:apply-templates/>
+  </div>
 </xsl:template>
 
 </xsl:stylesheet>
