@@ -34,6 +34,7 @@ cd $filebase
 wget -q ${url} -o wget.log
 ${SCRIPT_DIR}/fix-zip-filenames.sh
 #echo ${file}
+ZIP_SIZE=`du -h ${file} | cut -f 1`
 unzip ${file}
 ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
 
@@ -48,6 +49,7 @@ curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
 
 (SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${file}.json > /dev/null)
+INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
 #####rm -f ${file}.json ${filebase}.xml ${file}
 )
 
@@ -55,7 +57,6 @@ END=$(date +%s)
 DIFF=$(( $END - $START ))
 echo "${file} Processed in $DIFF seconds"
 
-END=$(date +%s)
-DIFF=$(( $END - $START ))
-echo "Total time: $DIFF seconds"
-
+EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
+echo -e "${EC2_INSTANCE_ID}\t${file}\t${$ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
+#	Ordinal
