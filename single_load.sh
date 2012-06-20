@@ -2,15 +2,24 @@
 
 START=$(date +%s)
 
+SCRIPT_DIR=${SCRIPT_DIR:-~/patent-indexing}
+
+# Unzip categories.zip if necessary
+if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
+    pushd ${SCRIPT_DIR}
+    unzip categories.zip
+    popd
+fi
+
 for url in $@
 do
     file=`echo ${url} | awk -F '/' '{print $7}'`
     filebase=`echo ${file} | awk -F '.' '{print $1}'`
     mkdir $filebase
-    ln -s `pwd`/categories.xml `pwd`/${filebase}/categories.xml
-    ln -s `pwd`/saxon9he.jar `pwd`/${filebase}/saxon9he.jar
-    ln -s `pwd`/convert.xsl `pwd`/${filebase}/convert.xsl
-    ln -s `pwd`/cals_table.xsl `pwd`/${filebase}/cals_table.xsl
+    ln -s ${SCRIPT_DIR}/categories.xml ${filebase}/categories.xml
+    ln -s ${SCRIPT_DIR}/saxon9he.jar ${filebase}/saxon9he.jar
+    ln -s ${SCRIPT_DIR}/convert.xsl ${filebase}/convert.xsl
+    ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     (
     cd $filebase
     wget -q ${url} -o wget.log

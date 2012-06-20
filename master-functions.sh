@@ -4,59 +4,76 @@ MAX_FORK=5
 MAX_NODES=2
 SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 
+# I'm assuming that the EC2_PRIVATE_KEY and EC2_CERT environment variables are
+# set to something appropriate
+
 start_nodes() {
-    ec2-run-instances ami-1b814f72   \
-        --block-device-mapping '/dev/sdb=snap-48adde35::true'   \
-        --block-device-mapping '/dev/sdi1=:10:false'   \
-        --block-device-mapping '/dev/sdi2=:10:false'   \
-        --block-device-mapping '/dev/sdi3=:20:false'   \
+    ec2-run-instances ami-e565ba8c   \
+        --block-device-mapping '/dev/sdb1=ephemeral0'   \
+        --block-device-mapping '/dev/sdb2=ephemeral1'   \
         --instance-type m1.large   \
         --key uspto-jenkins     \
         --instance-count $MAX_NODES  \
-        --group default  > ~/run-output
+        --group default  > ~/start_nodes.out
 }
 
 make_instance_list() {
-    cat ~/run-output | \
+    cat ~/start_nodes.out | \
         grep uspto-jenkins | \
         cut -f 2 > ~/instance_list
 }
 
+list_node_states() {
+    cat ~/instance_list | \
+        xargs  ec2-describe-instances | \
+        grep INSTANCE | cut -f 6
+}
+
+wait_for_pending_nodes() {
+    while [ `list_node_states | grep pending | wc -l` -gt 0 ]
+    do
+        sleep 15
+    done
+}
+
 make_addr_list() {
     cat ~/instance_list | \
-        xargs ec2-describe-instances | \
+        parallel 'ec2-describe-instances {} | \
         grep INSTANCE | \
-        cut -f 5 > ~/instance_addr_list
+        cut -f 5 >> ~/instance_addr_list'
+}
+
+make_ssh_login_file() {
+    mkdir -p ~/.parallel
+    cat ~/instance_addr_list | \
+        sed 's/\(.*\)/ubuntu@\1/' > ~/.parallel/sshloginfile
 }
 
 terminate_instances() {
     cat ~/instance_list | \
-        xargs -P $MAX_FORK ec2-terminate-instances
+        parallel 'ec2-terminate-instances {}'
     rm ~/instance_addr_list
     rm ~/instance_list
-    rm ~/run-output
+    rm ~/start_nodes.out
+    rm ~/.parallel/sshloginfile
 }
 
 distribute_init() {
     cat ~/instance_addr_list | \
-        sed 's/\(.*\)/\1:/' | \
-        xargs -P $MAX_FORK -n 1 scp $SSH_ARGS \
-            ~/dir_search/aws/index-node/node-init.sh
+        parallel "scp -r patent-indexing {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        sed 's/\(.*\)/\1:/' | \
-        xargs -P $MAX_FORK -n 1 scp $SSH_ARGS \
-            ~/dir_search/aws/index-node/home:tange.repo
-        
+        parallel "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
+    cat ~/instance_addr_list | \
+        parallel "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
 }
 
-distribute_bins() {
+distribute_solr() {
     cat ~/instance_addr_list | \
-        sed 's/\(.*\)/\1:\~\/bin/' | \
-        xargs -P $MAX_FORK -n 1 scp -r $SSH_ARGS \
-            ~/dir_search/aws/*
+        parallel "scp -r solr {}: 2>&1 | grep -v 'Permanently added'"
 }
 
 node_init() {
+    echo "sh patent-indexing/node-init.sh" | parallel --tag --onall -S ..
     cat ~/instance_addr_list | \
         sed 's/\(.*\)/\1 sh node-init.sh/' | \
         xargs -P $MAX_FORK -n 3 ssh -t -t $SSH_ARGS
@@ -89,8 +106,9 @@ get_node_dones() {
 ready_nodes() {
     start_nodes
     make_instance_list
-    sleep 480
+    wait_for_pending_nodes
     make_addr_list
+    make_ssh_login_file
     distribute_init
     node_init
     distribute_bins
