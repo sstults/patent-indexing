@@ -72,6 +72,14 @@ distribute_solr() {
         parallel "scp -r solr {}: 2>&1 | grep -v 'Permanently added'"
 }
 
+start_solr() {
+    echo "service jetty start" | parallel --tag --nonall -S ..
+}
+
+stop_solr() {
+    echo "service jetty stop" | parallel --tag --nonall -S ..
+}
+
 node_init() {
     cat ~/instance_addr_list | \
         parallel "ssh -t -t {} sh patent-indexing/node-init.sh"
@@ -109,6 +117,7 @@ ready_nodes() {
     make_ssh_login_file
     distribute_init
     node_init
-    distribute_bins
-    parallel --nonall --sshloginfile instance_addr_list cd bin/index-node ';' nohup unzip categories.zip
+    distribute_solr
+    start_solr
+    parallel --nonall -S .. cd patent-indexing ';' unzip categories.zip
 }
