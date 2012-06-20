@@ -38,7 +38,6 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     unzip ${file}
     ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
 
-
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
     IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
     CFILE="config=solrconfig.xml"
@@ -46,14 +45,14 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     DDIR="dataDir=${data_dir}"
     curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
-
-
-
     INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
     (SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
     #####rm -f ${file}.json ${filebase}.xml ${file}
 
     EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
+    END=$(date +%s)
+    DIFF=$(( $END - $START ))
+
     echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
     #	Ordinal
 )
