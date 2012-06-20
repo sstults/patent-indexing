@@ -9,18 +9,27 @@ then
 fi  
 
 before="$(date +%s)"
+
+log()
+{
+    # might do something interesting here, but for now it's good for trimming STDOUT
+    if [ "$LOGGING" == "true" ]; then
+        echo $@
+    fi
+}
+
 benchmark() 
 {
     after="$(date +%s)"
     elapsed_seconds="$(expr $after - $before)"
-    echo "Total Time: ${elapsed_seconds} sec"
+    log "Total Time: ${elapsed_seconds} sec"
 }
 
-echo "  1. Removing xml and doctype declarations from the patent file."
+log "  1. Removing xml and doctype declarations from the patent file."
 sed -e '/^<!DOCTYPE.*/d' -e '/^<?xml/d' > "lump.xml" $1
 sed -i 's/dtd-version="v4.2 2006-08-23"//g' "lump.xml"
 
-echo "  2. Splitting large file up into 1000 document chunks"
+log "  2. Splitting large file up into 1000 document chunks"
 # Step 3: Split the single large file into chunks of 1000 documents each.
 awk '/<us-patent-grant/{count++;}count==250{close("tmp"fc".xml");count=1;fc++;}count{f="tmp"fc".xml";print $0 > f}' lump.xml
 
@@ -28,10 +37,10 @@ awk '/<us-patent-grant/{count++;}count==250{close("tmp"fc".xml");count=1;fc++;}c
 rm -f lump.xml
 rm -f lump.bak
 rm -f $2
-echo "  3. Processing files"
+log "  3. Processing files"
 for f in tmp*.xml 
 do
-  echo "      - Processing $f file..."
+  log "      - Processing $f file..."
   sed -i -e '1i <patents>' -e '$a </patents>' $f
 
   java -cp saxon9he.jar net.sf.saxon.Transform -s:$f -xsl:convert.xsl >> $2
