@@ -47,13 +47,8 @@ curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
 
 
-(SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${file}.json > /dev/null)
+(SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
 #####rm -f ${file}.json ${filebase}.xml ${file}
-)
-
-END=$(date +%s)
-DIFF=$(( $END - $START ))
-echo "${file} Processed in $DIFF seconds"
 
 END=$(date +%s)
 DIFF=$(( $END - $START ))
