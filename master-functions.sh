@@ -116,8 +116,7 @@ ready_nodes() {
     make_addr_list
     make_ssh_login_file
     distribute_init
-    node_init
     distribute_solr
-    start_solr
+    node_init
     parallel --nonall -S .. cd patent-indexing ';' unzip categories.zip
 }
