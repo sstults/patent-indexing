@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ $# -lt 2 ]
+then
+  echo
+  echo "Usage: single_load.sh patent_grant_url /path/to/solr/data/dir"
+  exit 0
+fi  
+
 START=$(date +%s)
 
 SCRIPT_DIR=${SCRIPT_DIR:-~/patent-indexing}
@@ -10,6 +17,10 @@ if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
     unzip categories.zip
     popd
 fi
+
+url=$1
+data_dir=$2
+
 
 for url in $@
 do
@@ -23,11 +34,22 @@ do
     (
     cd $filebase
     wget -q ${url} -o wget.log
-    ../fix-zip-filenames.sh
+    ${SCRIPT_DIR}/fix-zip-filenames.sh
     #echo ${file}
     unzip ${file}
-    ../convert.sh ${filebase}.xml ${filebase}.json
-    (SOLR_CORE=${filebase}; ../post_json.sh ${file}.json > /dev/null)
+    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
+    
+    
+    CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
+    IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
+    CFILE="config=solrconfig.xml"
+    SFILE="schema=schema.xml"
+    DDIR="dataDir=${data_dir}"
+    curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
+    
+    
+    
+    (SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${file}.json > /dev/null)
     #####rm -f ${file}.json ${filebase}.xml ${file}
     )
 
