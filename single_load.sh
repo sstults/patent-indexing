@@ -30,29 +30,30 @@ ln -s ${SCRIPT_DIR}/saxon9he.jar ${filebase}/saxon9he.jar
 ln -s ${SCRIPT_DIR}/convert.xsl ${filebase}/convert.xsl
 ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
 (
-cd $filebase
-wget -q ${url} -o wget.log
-${SCRIPT_DIR}/fix-zip-filenames.sh
-#echo ${file}
-ZIP_SIZE=`du -h ${file} | cut -f 1`
-unzip ${file}
-${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
+    cd $filebase
+    wget -q ${url} -o wget.log
+    ${SCRIPT_DIR}/fix-zip-filenames.sh
+    #echo ${file}
+    ZIP_SIZE=`du -h ${file} | cut -f 1`
+    unzip ${file}
+    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
 
 
-CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
-IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
-CFILE="config=solrconfig.xml"
-SFILE="schema=schema.xml"
-DDIR="dataDir=${data_dir}"
-curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
+    CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
+    IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
+    CFILE="config=solrconfig.xml"
+    SFILE="schema=schema.xml"
+    DDIR="dataDir=${data_dir}"
+    curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
 
 
 
-INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
-(SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
-#####rm -f ${file}.json ${filebase}.xml ${file}
+    INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
+    (SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
+    #####rm -f ${file}.json ${filebase}.xml ${file}
 
-EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
-echo -e "${EC2_INSTANCE_ID}\t${file}\t${$ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
-#	Ordinal
+    EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
+    echo -e "${EC2_INSTANCE_ID}\t${file}\t${$ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
+    #	Ordinal
+)
