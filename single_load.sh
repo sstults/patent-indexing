@@ -48,14 +48,10 @@ curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
 
 
-(SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${file}.json > /dev/null)
-INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
-#####rm -f ${file}.json ${filebase}.xml ${file}
-)
 
-END=$(date +%s)
-DIFF=$(( $END - $START ))
-echo "${file} Processed in $DIFF seconds"
+INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
+(SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
+#####rm -f ${file}.json ${filebase}.xml ${file}
 
 EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
 echo -e "${EC2_INSTANCE_ID}\t${file}\t${$ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
