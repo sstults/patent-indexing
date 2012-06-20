@@ -46,7 +46,7 @@ make_addr_list() {
 make_ssh_login_file() {
     mkdir -p ~/.parallel
     cat ~/instance_addr_list | \
-        sed 's/\(.*\)/ubuntu@\1/' > ~/.parallel/sshloginfile
+        sed 's/\(.*\)/\1/' > ~/.parallel/sshloginfile
 }
 
 terminate_instances() {
@@ -73,10 +73,8 @@ distribute_solr() {
 }
 
 node_init() {
-    echo "sh patent-indexing/node-init.sh" | parallel --tag --onall -S ..
     cat ~/instance_addr_list | \
-        sed 's/\(.*\)/\1 sh node-init.sh/' | \
-        xargs -P $MAX_FORK -n 3 ssh -t -t $SSH_ARGS
+        parallel "ssh -t -t {} sh patent-indexing/node-init.sh"
 }
 
 get_status() {
