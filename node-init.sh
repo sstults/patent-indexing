@@ -4,15 +4,15 @@
 # NODE INITIALIZATION
 #
 
-mkdir ~/todo
-mkdir ~/doing
-mkdir ~/done
+mkdir -p ~/todo
+mkdir -p ~/doing
+mkdir -p ~/done
 
-sudo mkdir /media/ephemeral1
+sudo mkdir -p /media/ephemeral1
 sudo mount /dev/xvdb2 /media/ephemeral1
 
-sudo mkdir /media/ephemeral0/data
-sudo mkdir /media/ephemeral1/data
+sudo mkdir -p /media/ephemeral0/data
+sudo mkdir -p /media/ephemeral1/data
 
 sudo chmod 777 /media/ephemeral0/data
 sudo chmod 777 /media/ephemeral1/data
