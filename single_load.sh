@@ -46,7 +46,7 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
     INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
-    (SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
+    (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
     #####rm -f ${file}.json ${filebase}.xml ${file}
 
     EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
