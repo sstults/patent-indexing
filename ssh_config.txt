@@ -1,0 +1,3 @@
+StrictHostKeyChecking no
+IdentityFile ~/.ssh/uspto-jenkins_id
+CheckHostIP no
