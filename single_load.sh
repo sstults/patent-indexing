@@ -54,6 +54,6 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     #####rm -f ${file}.json ${filebase}.xml ${file}
 
     EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
-    echo -e "${EC2_INSTANCE_ID}\t${file}\t${$ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
+    echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
     #	Ordinal
 )
