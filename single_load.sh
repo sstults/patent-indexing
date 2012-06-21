@@ -8,7 +8,7 @@ then
 fi  
 
 START=$(date +%s)
-
+EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
 SCRIPT_DIR=${SCRIPT_DIR:-~/patent-indexing}
 
 # Unzip categories.zip if necessary
@@ -36,7 +36,7 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     #echo ${file}
     ZIP_SIZE=`du -h ${file} | cut -f 1`
     unzip ${file}
-    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json
+    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json > ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
 
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
     IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
@@ -46,13 +46,12 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
     INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
-    (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > /dev/null)
+    (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > ~/${EC2_INSTANCE_ID}.${filebase}.post.log 2>&1)
     #####rm -f ${file}.json ${filebase}.xml ${file}
 
-    EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
     END=$(date +%s)
     DIFF=$(( $END - $START ))
 
-    echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" 
+    echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" > ~/${EC2_INSTANCE_ID}.out
     #	Ordinal
 )
