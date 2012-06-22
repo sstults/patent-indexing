@@ -3,7 +3,7 @@
 if [ $# -lt 2 ]
 then
   echo
-  echo "Usage: single_load.sh patent_grant_url /path/to/solr/data/dir"
+  echo "Usage: single_load.sh patent_grant_url"
   exit 0
 fi  
 
@@ -39,7 +39,7 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json > ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
 
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
-    IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
+    IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
     CFILE="config=solrconfig.xml"
     SFILE="schema=schema.xml"
     DDIR="dataDir=${data_dir}"

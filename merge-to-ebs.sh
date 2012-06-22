@@ -37,7 +37,7 @@ attach_volume() {
 
 create_core() {
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
-    IDIR="instanceDir=/home/ec2-user/solr/dir_search_cores/us_patent_grant_v2_0/"
+    IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
     CFILE="config=solrconfig.xml"
     SFILE="schema=schema.xml"
     DDIR="dataDir=/media/ebs/data"
