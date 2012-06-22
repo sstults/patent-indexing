@@ -30,7 +30,6 @@ if [ -d /media/ephemeral0/data/index ] ; then
 else
     data_dir=/media/ephemeral0/data/index
 fi
-data_dir=$2
 
 
 file=`echo ${url} | awk -F '/' '{print $7}'`
@@ -47,7 +46,7 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     #echo ${file}
     ZIP_SIZE=`du -h ${file} | cut -f 1`
     unzip ${file}
-    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json > ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
+    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
 
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
     IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
@@ -57,12 +56,12 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 
     INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
-    (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json > ~/${EC2_INSTANCE_ID}.${filebase}.post.log 2>&1)
+    (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.post.log 2>&1)
     #####rm -f ${file}.json ${filebase}.xml ${file}
 
     END=$(date +%s)
     DIFF=$(( $END - $START ))
 
-    echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" > ~/${EC2_INSTANCE_ID}.out
+    echo -e "${EC2_INSTANCE_ID}\t${file}\t${ZIP_SIZE}\t${INDEX_SIZE}\t${DIFF}" >> ~/${EC2_INSTANCE_ID}.out
     #	Ordinal
 )

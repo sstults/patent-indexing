@@ -13,8 +13,10 @@ export EC2_PRIVATE_KEY EC2_CERT
 
 log() {
     # might do something interesting here, but for now it's good for trimming STDOUT
-    if [ "$LOGGING" == "true" ]; then
+    if [ "$LOGGING" == "false" ]; then
         echo -e $@
+    else
+        echo -e $@ >> ~/${EC2_INSTANCE_ID}.out
     fi
 }
 
@@ -54,7 +56,7 @@ merge_to_ebs() {
 
 log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE}"
 
-ec2-create-volume --size ${EBS_SIZE} -z us-east-1a > ~/ebs-create-log
+ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
 wait_for_ebs VOLUME creating
 
 attach_volume
