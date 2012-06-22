@@ -1,0 +1,8 @@
+#JAVA_HOME=/usr/java/default
+SOLR_ROOT="/home/ec2-user/patent-indexing/solr"
+SOLR_DIR="${SOLR_ROOT}/apache-solr-4.0-trunk/example"
+SOLR_OPTIONS="-Dsolr.solr.home=${SOLR_ROOT}/dir_search_cores/"
+JAVA_OPTIONS="${SOLR_OPTIONS} $JAVA_OPTIONS"
+JETTY_HOME=${SOLR_DIR}
+JETTY_USER=ec2-user
+JETTY_LOGS=/var/log/solr
