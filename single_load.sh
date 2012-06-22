@@ -30,7 +30,6 @@ if [ -d /media/ephemeral0/data/index ] ; then
 else
     data_dir=/media/ephemeral0/data/index
 fi
-data_dir=$2
 
 
 file=`echo ${url} | awk -F '/' '{print $7}'`
