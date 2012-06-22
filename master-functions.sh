@@ -34,6 +34,8 @@ wait_for_pending_nodes() {
     do
         sleep 15
     done
+    # todo: wait for ssh smarter
+    sleep 120
 }
 
 make_addr_list() {
