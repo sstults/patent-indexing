@@ -19,6 +19,17 @@ if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
 fi
 
 url=$1
+
+if [ -d /media/ephemeral0/data/index ] ; then
+    if [ -d /media/ephemeral1/data/index ] ; then
+        echo "I don't know how to handle more than two indexes" >&2
+        exit 1
+    else
+        data_dir=/media/ephemeral1/data/index
+    fi
+else
+    data_dir=/media/ephemeral0/data/index
+fi
 data_dir=$2
 
 
