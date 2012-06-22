@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -lt 2 ]
+if [ $# -lt 1 ]
 then
   echo
   echo "Usage: single_load.sh patent_grant_url"
