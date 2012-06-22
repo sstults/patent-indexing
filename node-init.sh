@@ -31,7 +31,7 @@ sudo yum -y install parallel
 #
 sudo mkdir -p /var/log/solr
 sudo chown ec2-user:ec2-user /var/log/solr
-cd ~/solr
-sudo ln -s /home/ec2-user/solr/jetty /etc/default/jetty
-sudo ln -s /home/ec2-user/solr/jetty6.sh /etc/init.d/jetty
+cd ~/patent-indexing/solr
+sudo ln -s /home/ec2-user/patent-indexing/solr/jetty /etc/default/jetty
+sudo ln -s /home/ec2-user/patent-indexing/solr/jetty6.sh /etc/init.d/jetty
 sudo service jetty start
