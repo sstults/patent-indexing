@@ -50,7 +50,7 @@ merge_to_ebs() {
     CURL="http://localhost:8983/solr/admin/cores?action=mergeindexes"
     CORE="core=${EC2_INSTANCE_ID}"
     DIR1="indexDir=/media/ephemeral0/data/index"
-    DIR2="indexDir=/media/ephemeral0/data/index"
+    DIR2="indexDir=/media/ephemeral1/data/index"
     curl "${CURL}&${CORE}&${DIR1}&${DIR2}"
 }
 
