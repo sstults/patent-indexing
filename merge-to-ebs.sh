@@ -7,6 +7,7 @@ INDEX1_SIZE=`du -s /media/ephemeral0/data | cut -f 1`
 INDEX2_SIZE=`du -s /media/ephemeral1/data | cut -f 1`
 # do some funky math to give us some headway in our new volume
 EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
+EBS_VOL=""
 EC2_PRIVATE_KEY=~/.aws_creds/pk-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
 EC2_CERT=~/.aws_creds/cert-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
 export EC2_PRIVATE_KEY EC2_CERT
@@ -21,8 +22,8 @@ log() {
 }
 
 get_ebs_state() {
-    vol=`cat ~/ebs-create-log | grep $1 | cut -f 2`
-    ec2-describe-volumes $vol | grep $1 | cut -f 6
+    EBS_VOL=`cat ~/ebs-create-log | grep $1 | cut -f 2`
+    ec2-describe-volumes $EBS_VOL | grep $1 | cut -f 6
 }
 
 wait_for_ebs() {
@@ -54,7 +55,7 @@ merge_to_ebs() {
     curl "${CURL}&${CORE}&${DIR1}&${DIR2}"
 }
 
-log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE}"
+log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE} VOL:${EBS_VOL}"
 
 ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
 wait_for_ebs VOLUME creating
