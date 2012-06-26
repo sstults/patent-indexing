@@ -25,10 +25,10 @@ if [ -d /media/ephemeral0/data/index ] ; then
         echo "I don't know how to handle more than two indexes" >&2
         exit 1
     else
-        data_dir=/media/ephemeral1/data/index
+        data_dir=/media/ephemeral1/data
     fi
 else
-    data_dir=/media/ephemeral0/data/index
+    data_dir=/media/ephemeral0/data
 fi
 
 
