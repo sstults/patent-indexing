@@ -36,20 +36,27 @@ fi
 
 file=`echo ${url} | awk -F '/' '{print $7}'`
 filebase=`echo ${file} | awk -F '.' '{print $1}'`
-mkdir $filebase
+test ! -d $filebase && mkdir $filebase
 ln -s ${SCRIPT_DIR}/categories.xml ${filebase}/categories.xml
 ln -s ${SCRIPT_DIR}/saxon9he.jar ${filebase}/saxon9he.jar
 ln -s ${SCRIPT_DIR}/convert.xsl ${filebase}/convert.xsl
 ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
 (
     cd $filebase
-    wget -q ${url} -o wget.log
-    ${SCRIPT_DIR}/fix-zip-filenames.sh
-    #echo ${file}
-    ZIP_SIZE=`du -h ${file} | cut -f 1`
-    unzip ${file}
-    ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
+    if [ ! -f $file ]
+    then
+        wget -q ${url} -o wget.log
+        ${SCRIPT_DIR}/fix-zip-filenames.sh
+        #echo ${file}
+        ZIP_SIZE=`du -h ${file} | cut -f 1`
+        unzip ${file}
+    fi
 
+    if [ ! -f ${filebase}.json ]
+    then
+        ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
+    fi
+    
     CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
     IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
     CFILE="config=solrconfig.xml"
