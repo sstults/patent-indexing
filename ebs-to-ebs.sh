@@ -5,12 +5,14 @@
 if [ $# -lt 2 ]
 then
   echo
-  echo "Usage: ebs-to-ebs.sh vol_id1 vol_id2"
+  echo "Usage: ebs-to-ebs.sh vol_id1 vol_id2 [vol_idn...]"
   exit 0
 fi  
 
 EBS_VOL1=$1
 EBS_VOL2=$2
+MNT1=/dev/sdf1
+MNT2=/dev/sdf2
 EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
 EC2_PRIVATE_KEY=~/.aws_creds/pk-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
 EC2_CERT=~/.aws_creds/cert-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
@@ -45,6 +47,7 @@ attach_volumes() {
 attach_volume() {
     vol=`cat ~/ebs-create-log | grep VOLUME | cut -f 2`
     ec2-attach-volume $vol --instance $EC2_INSTANCE_ID --device /dev/sdf3
+    wait_for_ebs ATTACHMENT attaching
 }
 
 create_core() {
@@ -64,32 +67,37 @@ merge_to_ebs() {
     curl "${CURL}&${CORE}&${DIR1}&${DIR2}"
 }
 
+create_volume() {
+    sudo mkdir -p /media/ebs1
+    sudo mkdir -p /media/ebs2
+    sudo mount /dev/sdf1 /media/ebs1
+    sudo mount /dev/sdf2 /media/ebs2
+
+    INDEX1_SIZE=`du -s /media/ebs1/data | cut -f 1`
+    INDEX2_SIZE=`du -s /media/ebs2/data | cut -f 1`
+    # do some funky math to give us some headway in our new volume
+    EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
+    ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
+    wait_for_ebs VOLUME creating
+
+    attach_volume
+    wait_for_ebs ATTACHMENT attaching
+    
+    # We seem to need to wait a little for the OS to show the volume
+    sleep 60
+    
+    sudo mkfs.ext4 /dev/sdf3
+    sudo mkdir -p /media/ebs3
+    sudo mount /dev/sdf3 /media/ebs3
+    sudo mkdir /media/ebs3/data
+    sudo chown ec2-user:ec2-user /media/ebs3/data
+}
+
+
+
 attach_volumes
-wait_for_ebs ATTACHMENT attaching
-
-sudo mkdir -p /media/ebs1
-sudo mkdir -p /media/ebs2
-sudo mount /dev/sdf1 /media/ebs1
-sudo mount /dev/sdf2 /media/ebs2
-
-INDEX1_SIZE=`du -s /media/ebs1/data | cut -f 1`
-INDEX2_SIZE=`du -s /media/ebs2/data | cut -f 1`
-# do some funky math to give us some headway in our new volume
-EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
-
+create_volume
 log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE}"
-
-ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
-wait_for_ebs VOLUME creating
-
-attach_volume
-wait_for_ebs ATTACHMENT attaching
-
-sudo mkfs.ext4 /dev/sdf3
-sudo mkdir -p /media/ebs3
-sudo mount /dev/sdf3 /media/ebs3
-sudo mkdir /media/ebs3/data
-sudo chown ec2-user:ec2-user /media/ebs3/data
 
 create_core
 merge_to_ebs
