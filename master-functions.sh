@@ -13,6 +13,7 @@ start_nodes() {
         --block-device-mapping '/dev/sdb2=ephemeral1'   \
         --instance-type m1.large   \
         --key uspto-jenkins     \
+        --availability-zone us-east-1a \
         --instance-count $MAX_NODES  \
         --group default  > ~/start_nodes.out
 }
