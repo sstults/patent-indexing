@@ -37,8 +37,10 @@ attach_volume() {
     vol=`cat ~/ebs-create-log | grep VOLUME | cut -f 2`
     ec2-attach-volume $vol --instance $EC2_INSTANCE_ID --device /dev/sdf
     wait_for_ebs ATTACHMENT attaching
-    # todo: wait until the device shows up
-    sleep 30 
+    while [ ! -h /dev/sdf ]
+    do
+        sleep 10
+    done
 }
 
 create_core() {
@@ -76,5 +78,6 @@ log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE} VOL:${EBS_VOL}"
 
 create_ebs
 attach_volume
+ready_mount
 create_core
 merge_to_ebs
