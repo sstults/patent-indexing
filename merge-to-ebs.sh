@@ -36,6 +36,7 @@ wait_for_ebs() {
 attach_volume() {
     vol=`cat ~/ebs-create-log | grep VOLUME | cut -f 2`
     ec2-attach-volume $vol --instance $EC2_INSTANCE_ID --device /dev/sdf
+    wait_for_ebs ATTACHMENT attaching
 }
 
 create_core() {
@@ -55,19 +56,23 @@ merge_to_ebs() {
     curl "${CURL}&${CORE}&${DIR1}&${DIR2}"
 }
 
+create_ebs() {
+    region=`ec2-describe-instances $EC2_INSTANCE_ID | grep INSTANCE | cut -f 12`
+    ec2-create-volume --size ${EBS_SIZE} -z $region >> ~/ebs-create-log
+    wait_for_ebs VOLUME creating
+}
+
+ready_mount() {
+    sudo mkfs.ext4 /dev/sdf
+    sudo mkdir -p /media/ebs
+    sudo mount /dev/sdf /media/ebs
+    sudo mkdir /media/ebs/data
+    sudo chown ec2-user:ec2-user /media/ebs/data
+}
+
 log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE} VOL:${EBS_VOL}"
 
-ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
-wait_for_ebs VOLUME creating
-
+create_ebs
 attach_volume
-wait_for_ebs ATTACHMENT attaching
-
-sudo mkfs.ext4 /dev/sdf
-sudo mkdir -p /media/ebs
-sudo mount /dev/sdf /media/ebs
-sudo mkdir /media/ebs/data
-sudo chown ec2-user:ec2-user /media/ebs/data
-
 create_core
 merge_to_ebs
