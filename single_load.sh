@@ -20,16 +20,16 @@ fi
 
 url=$1
 
-if [ -d /media/ephemeral0/data/index ] ; then
-    if [ -d /media/ephemeral1/data/index ] ; then
+if [ -f /tmp/using.ephemeral0 ] ; then
+    if [ -f /tmp/using.ephemeral ] ; then
         echo "I don't know how to handle more than two indexes" >&2
         exit 1
     else
-        touch /media/ephemeral1/data/index
+        touch /tmp/using.ephemeral
         data_dir=/media/ephemeral1/data
     fi
 else
-    touch /media/ephemeral0/data
+    touch /tmp/using.ephemeral0
     data_dir=/media/ephemeral0/data
 fi
 
