@@ -10,6 +10,7 @@ fi
 START=$(date +%s)
 EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
 SCRIPT_DIR=${SCRIPT_DIR:-~/patent-indexing}
+SOLR_XML=${SCRIPT_DIR}/solr/dir_search_cores/solr.xml
 
 # Unzip categories.zip if necessary
 if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
@@ -61,7 +62,7 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
     fi
     
     # Create core if needed
-    if [ "1" != `grep -c ipg100223 solr.xml` ]
+    if [ "1" != `grep -c ${filebase} $SOLR_XML` ]
     then
         CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
         IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
