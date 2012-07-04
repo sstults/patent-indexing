@@ -11,6 +11,8 @@ fi
 
 EBS_VOL1=$1
 EBS_VOL2=$2
+EBS_VOL3=""
+EBS_SIZE=""
 MNT1=/dev/sdf1
 MNT2=/dev/sdf2
 EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
@@ -28,8 +30,8 @@ log() {
 }
 
 get_ebs_state() {
-    vol=`cat ~/ebs-create-log | grep $1 | cut -f 2`
-    ec2-describe-volumes $vol | grep $1 | cut -f 6
+    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep $1 | cut -f 2`
+    ec2-describe-volumes $EBS_VOL3 | grep $1 | cut -f 6
 }
 
 wait_for_ebs() {
@@ -39,15 +41,25 @@ wait_for_ebs() {
     done
 }
 
+wait_for_device() {
+    # We seem to need to wait a little for the OS to show the volume
+    while [ ! -h $1 ]
+    do
+        sleep 10
+    done
+}
+
 attach_volumes() {
     ec2-attach-volume $EBS_VOL1 --instance $EC2_INSTANCE_ID --device /dev/sdf1
     ec2-attach-volume $EBS_VOL2 --instance $EC2_INSTANCE_ID --device /dev/sdf2
+    wait_for_device /dev/sdf1
+    wait_for_device /dev/sdf2
 }
 
 attach_volume() {
-    vol=`cat ~/ebs-create-log | grep VOLUME | cut -f 2`
-    ec2-attach-volume $vol --instance $EC2_INSTANCE_ID --device /dev/sdf3
+    ec2-attach-volume $EBS_VOL3 --instance $EC2_INSTANCE_ID --device /dev/sdf3
     wait_for_ebs ATTACHMENT attaching
+    wait_for_device /dev/sdf3
 }
 
 create_core() {
@@ -77,14 +89,11 @@ create_volume() {
     INDEX2_SIZE=`du -s /media/ebs2/data | cut -f 1`
     # do some funky math to give us some headway in our new volume
     EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
+
     ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
     wait_for_ebs VOLUME creating
 
-    attach_volume
-    wait_for_ebs ATTACHMENT attaching
-    
-    # We seem to need to wait a little for the OS to show the volume
-    sleep 60
+    attach_volume    
     
     sudo mkfs.ext4 /dev/sdf3
     sudo mkdir -p /media/ebs3
@@ -93,11 +102,9 @@ create_volume() {
     sudo chown ec2-user:ec2-user /media/ebs3/data
 }
 
-
-
 attach_volumes
 create_volume
-log "Index1:${INDEX1_SIZE} Index2:${INDEX2_SIZE} EBS:${EBS_SIZE}"
+log "Index1Size:${INDEX1_SIZE} Index2Size:${INDEX2_SIZE} EBSSize:${EBS_SIZE} NewEBS:${EBS_VOL3}"
 
 create_core
 merge_to_ebs
