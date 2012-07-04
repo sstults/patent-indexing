@@ -55,7 +55,7 @@ make_ssh_login_file() {
 
 terminate_instances() {
     cat ~/instance_list | \
-        parallel 'ec2-terminate-instances {}'
+        xargs ec2-terminate-instances
     rm ~/instance_addr_list
     rm ~/instance_list
     rm ~/start_nodes.out
