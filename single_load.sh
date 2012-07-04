@@ -43,6 +43,8 @@ ln -s ${SCRIPT_DIR}/convert.xsl ${filebase}/convert.xsl
 ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
 (
     cd $filebase
+    
+    # Pull down the file if needed
     if [ ! -f $file ]
     then
         wget -q ${url} -o wget.log
@@ -52,18 +54,23 @@ ln -s ${SCRIPT_DIR}/cals_table.xsl ${filebase}/cals_table.xsl
         unzip ${file}
     fi
 
+    # Do transformation if needed
     if [ ! -f ${filebase}.json ]
     then
         ${SCRIPT_DIR}/convert.sh ${filebase}.xml ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.convert.log 2>&1
     fi
     
-    CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
-    IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
-    CFILE="config=solrconfig.xml"
-    SFILE="schema=schema.xml"
-    DDIR="dataDir=${data_dir}"
-    curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
-
+    # Create core if needed
+    if [ "1" != `grep -c ipg100223 solr.xml` ]
+    then
+        CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
+        IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
+        CFILE="config=solrconfig.xml"
+        SFILE="schema=schema.xml"
+        DDIR="dataDir=${data_dir}"
+        curl "${CURL}&name=${filebase}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
+    fi
+    
     INDEX_SIZE=`du -sh ${data_dir} | cut -f 1`
     (export SOLR_CORE=${filebase}; ${SCRIPT_DIR}/post_json.sh ${filebase}.json >> ~/${EC2_INSTANCE_ID}.${filebase}.post.log 2>&1)
     #####rm -f ${file}.json ${filebase}.xml ${file}
