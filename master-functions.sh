@@ -40,10 +40,11 @@ wait_for_pending_nodes() {
 }
 
 make_addr_list() {
+    #NB: The way we do this is limited by the number of args you can feed to xargs
     cat ~/instance_list | \
-        parallel 'ec2-describe-instances {} | \
+        xargs ec2-describe-instances | \
         grep INSTANCE | \
-        cut -f 5 >> ~/instance_addr_list'
+        cut -f 5 > ~/instance_addr_list
 }
 
 make_ssh_login_file() {
@@ -62,54 +63,22 @@ terminate_instances() {
 }
 
 distribute_init() {
-    cat ~/instance_addr_list | \
-        parallel "scp -r patent-indexing {}: 2>&1 | grep -v 'Permanently added'"
+    # Doing this through git clone now so we don't have a single choke point
+    #cat ~/instance_addr_list | \
+    #    parallel "scp -r patent-indexing {}: 2>&1 | grep -v 'Permanently added'"
+    
+    # DANGER: I'M DOING THIS ON A CUSTOM NODE
     cat ~/instance_addr_list | \
         parallel "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
-}
-
-distribute_solr() {
+        parallel "scp -r .ssh {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "scp -r solr {}: 2>&1 | grep -v 'Permanently added'"
-}
-
-start_solr() {
-    echo "service jetty start" | parallel --tag --nonall -S ..
-}
-
-stop_solr() {
-    echo "service jetty stop" | parallel --tag --nonall -S ..
+        parallel "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
 }
 
 node_init() {
     cat ~/instance_addr_list | \
         parallel "ssh -t -t {} sh patent-indexing/node-init.sh"
-}
-
-get_status() {
-    cat ~/instance_addr_list | \
-        sed 's|\(.*\)|\1 sh bin/index-node/convert-status.sh|' | \
-        xargs -P $MAX_FORK -n 3 ssh $SSH_ARGS 2>/dev/null
-}
-
-get_node_todos() {
-    cat ~/instance_addr_list | \
-        sed 's|\(.*\)|\1 find ~/todo -type f|' | \
-        xargs -P $MAX_FORK -n 5 ssh $SSH_ARGS 2>/dev/null
-}
-
-get_node_doings() {
-    cat ~/instance_addr_list | \
-        sed 's|\(.*\)|\1 find ~/doing -type f|' | \
-        xargs -P $MAX_FORK -n 5 ssh $SSH_ARGS 2>/dev/null
-}
-
-get_node_dones() {
-    cat ~/instance_addr_list | \
-        sed 's|\(.*\)|\1 find ~/done -type f|' | \
-        xargs -P $MAX_FORK -n 5 ssh $SSH_ARGS 2>/dev/null
 }
 
 ready_nodes() {
