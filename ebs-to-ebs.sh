@@ -30,12 +30,11 @@ log() {
 }
 
 get_ebs_state() {
-    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep $1 | cut -f 2`
-    ec2-describe-volumes $EBS_VOL3 | grep $1 | cut -f 6
+    ec2-describe-volumes $2 | grep $1 | cut -f 6
 }
 
 wait_for_ebs() {
-    while [ `get_ebs_state $1 | grep $2 | wc -l` -gt 0 ]
+    while [ `get_ebs_state $1 $3 | grep $2 | wc -l` -gt 0 ]
     do
         sleep 15
     done
@@ -58,7 +57,7 @@ attach_volumes() {
 
 attach_volume() {
     ec2-attach-volume $EBS_VOL3 --instance $EC2_INSTANCE_ID --device /dev/sdf3
-    wait_for_ebs ATTACHMENT attaching
+    wait_for_ebs ATTACHMENT attaching $EBS_VOL3
     wait_for_device /dev/sdf3
 }
 
@@ -91,7 +90,8 @@ create_volume() {
     EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
 
     ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
-    wait_for_ebs VOLUME creating
+    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep $1 | cut -f 2`
+    wait_for_ebs VOLUME creating $EBS_VOL3
 
     attach_volume    
     
@@ -102,9 +102,22 @@ create_volume() {
     sudo chown ec2-user:ec2-user /media/ebs3/data
 }
 
+unmount_detach() {
+    sudo umount /dev/sdf1
+    sudo umount /dev/sdf2
+    sudo umount /dev/sdf3
+    ec2-detach-volume $EBS_VOL1
+    ec2-detach-volume $EBS_VOL2
+    ec2-detach-volume $EBS_VOL3
+    wait_for_ebs ATTACHMENT detaching $EBS_VOL1
+    wait_for_ebs ATTACHMENT detaching $EBS_VOL2
+    wait_for_ebs ATTACHMENT detaching $EBS_VOL3
+}
+
 attach_volumes
 create_volume
 log "Index1Size:${INDEX1_SIZE} Index2Size:${INDEX2_SIZE} EBSSize:${EBS_SIZE} NewEBS:${EBS_VOL3}"
 
 create_core
 merge_to_ebs
+unmount_detach
