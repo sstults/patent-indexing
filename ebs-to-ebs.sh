@@ -30,10 +30,12 @@ log() {
 }
 
 get_ebs_state() {
+    echo "** get_ebs_state $1 $2 **"
     ec2-describe-volumes $2 | grep $1 | cut -f 6
 }
 
 wait_for_ebs() {
+    echo "** wait_for_ebs $1 $2 $3 **"
     while [ `get_ebs_state $1 $3 | grep $2 | wc -l` -gt 0 ]
     do
         sleep 15
@@ -89,8 +91,10 @@ create_volume() {
     # do some funky math to give us some headway in our new volume
     EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
 
-    ec2-create-volume --size ${EBS_SIZE} -z us-east-1a >> ~/ebs-create-log
-    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep $1 | cut -f 2`
+    region=`ec2-describe-instances $EC2_INSTANCE_ID | grep INSTANCE | cut -f 12`
+    ec2-create-volume --size ${EBS_SIZE} -z $region > ~/ebs-create-log
+    echo "** create_volume **"
+    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep VOLUME | cut -f 2`
     wait_for_ebs VOLUME creating $EBS_VOL3
 
     attach_volume    
