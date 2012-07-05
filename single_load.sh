@@ -3,7 +3,7 @@
 if [ $# -lt 1 ]
 then
   echo
-  echo "Usage: single_load.sh patent_grant_url"
+  echo "Usage: single_load.sh patent_grant_url data_dir"
   exit 0
 fi  
 
@@ -20,20 +20,7 @@ if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
 fi
 
 url=$1
-
-if [ -f /tmp/using.ephemeral0 ] ; then
-    if [ -f /tmp/using.ephemeral ] ; then
-        echo "I don't know how to handle more than two indexes" >&2
-        exit 1
-    else
-        touch /tmp/using.ephemeral
-        data_dir=/media/ephemeral1/data
-    fi
-else
-    touch /tmp/using.ephemeral0
-    data_dir=/media/ephemeral0/data
-fi
-
+data_dir=$2
 
 file=`echo ${url} | awk -F '/' '{print $7}'`
 filebase=`echo ${file} | awk -F '.' '{print $1}'`
