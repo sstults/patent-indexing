@@ -87,7 +87,7 @@ node_init() {
 load_sample() {
     head -n $MAX_NODES patent-indexing/zip_urls.txt | \
         parallel --tag --use-cpus-instead-of-cores \
-        -j0 -S .. sh patent-indexing/single_load.sh {}
+        -S .. sh patent-indexing/single_load.sh {}
 }
 
 ready_nodes() {
