@@ -9,9 +9,8 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 
 start_nodes() {
     ec2-run-instances ami-e565ba8c   \
-        --block-device-mapping '/dev/sdb1=ephemeral0'   \
-        --block-device-mapping '/dev/sdb2=ephemeral1'   \
-        --instance-type m1.large   \
+        --block-device-mapping '/dev/sdi=:8:false'   \
+        --instance-type m1.medium   \
         --key uspto-jenkins     \
         --availability-zone us-east-1a \
         --instance-count $MAX_NODES  \
@@ -85,6 +84,12 @@ node_init() {
         parallel "ssh -t -t {} sh patent-indexing/node-init.sh"
 }
 
+load_sample() {
+    head -n $MAX_NODES patent-indexing/zip_urls.txt | \
+        parallel --tag --use-cpus-instead-of-cores \
+        -S .. sh patent-indexing/single_load.sh {}
+}
+
 ready_nodes() {
     start_nodes
     make_instance_list
@@ -93,5 +98,6 @@ ready_nodes() {
     make_ssh_login_file
     distribute_init
     node_init
-    parallel --nonall -S .. cd patent-indexing ';' unzip categories.zip
+    # Do something interesting to show we're all up
+    parallel --tag --nonall -S .. ls /var/log/solr/'*.log'
 }

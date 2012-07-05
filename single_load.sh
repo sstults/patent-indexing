@@ -3,7 +3,7 @@
 if [ $# -lt 1 ]
 then
   echo
-  echo "Usage: single_load.sh patent_grant_url data_dir"
+  echo "Usage: single_load.sh patent_grant_url"
   exit 0
 fi  
 
@@ -20,7 +20,7 @@ if [ ! -f ${SCRIPT_DIR}/categories.xml ] ; then
 fi
 
 url=$1
-data_dir=$2
+data_dir=/media/ebs/data
 
 file=`echo ${url} | awk -F '/' '{print $7}'`
 filebase=`echo ${file} | awk -F '.' '{print $1}'`

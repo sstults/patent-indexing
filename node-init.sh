@@ -4,17 +4,11 @@
 # NODE INITIALIZATION
 #
 
-sudo mkdir -p /media/ephemeral1
-sudo mount /dev/xvdb2 /media/ephemeral1
-
-sudo mkdir -p /media/ephemeral0/data
-sudo mkdir -p /media/ephemeral1/data
-
-sudo chmod 777 /media/ephemeral0/data
-sudo chmod 777 /media/ephemeral1/data
-
-sudo chown ec2-user:ec2-user /media/ephemeral0/data
-sudo chown ec2-user:ec2-user /media/ephemeral1/data
+sudo mkdir -p /media/ebs
+sudo mount /dev/xvdi /media/ebs
+sudo mkdir -p /media/ebs/data
+sudo chmod 777 /media/ebs/data
+sudo chown ec2-user:ec2-user /media/ebs/data
 
 echo "ec2-user:  sstults@o19s.com" | sudo tee -a /etc/aliases
 sudo newaliases
