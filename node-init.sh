@@ -5,7 +5,7 @@
 #
 
 sudo mkdir -p /media/ebs
-sudo mount /dev/xvdi /media/ebs
+sudo mount /dev/sdi /media/ebs
 sudo mkdir -p /media/ebs/data
 sudo chmod 777 /media/ebs/data
 sudo chown ec2-user:ec2-user /media/ebs/data

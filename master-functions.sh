@@ -101,3 +101,10 @@ ready_nodes() {
     # Do something interesting to show we're all up
     parallel --tag --nonall -S .. ls /var/log/solr/'*.log'
 }
+
+do_test() {
+    time ready_nodes
+    time load_sample
+    cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo service jetty stop"
+    cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo umount /media/ebs"
+}
