@@ -75,7 +75,7 @@ distribute_init() {
     cat ~/instance_addr_list | \
         parallel "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "ssh -t -t {} sudo yum -y install git"
+        parallel "ssh -t -t {} sudo yum -q -y install git"
     parallel --nonall -S .. git clone git@github.com:sstults/patent-indexing.git
 }
 

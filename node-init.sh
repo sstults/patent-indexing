@@ -14,7 +14,7 @@ echo "ec2-user:  sstults@o19s.com" | sudo tee -a /etc/aliases
 sudo newaliases
 
 sudo cp ~/patent-indexing/tange.repo /etc/yum.repos.d/
-sudo yum -y install parallel
+sudo yum -y -q install parallel
 
 #
 # Solr
