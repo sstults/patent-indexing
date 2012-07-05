@@ -95,7 +95,7 @@ create_volume() {
 
     attach_volume    
     
-    sudo mkfs.ext4 /dev/sdf3
+    sudo mkfs.ext4 /dev/sdf3 > /dev/null
     sudo mkdir -p /media/ebs3
     sudo mount /dev/sdf3 /media/ebs3
     sudo mkdir /media/ebs3/data

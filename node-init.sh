@@ -5,6 +5,7 @@
 #
 
 sudo mkdir -p /media/ebs
+sudo mkfs.ext4 /dev/sdi > /dev/null
 sudo mount /dev/sdi /media/ebs
 sudo mkdir -p /media/ebs/data
 sudo chmod 777 /media/ebs/data

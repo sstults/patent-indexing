@@ -107,4 +107,6 @@ do_test() {
     time load_sample
     cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo service jetty stop"
     cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo umount /media/ebs"
+    parallel --nonall -j0 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
+    cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo service jetty start"
 }
