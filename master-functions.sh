@@ -9,7 +9,7 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 
 start_nodes() {
     ec2-run-instances ami-e565ba8c   \
-        --block-device-mapping '/dev/sdi=:8:false'   \
+        --block-device-mapping '/dev/sdi=:9:false'   \
         --instance-type m1.medium   \
         --key uspto-jenkins     \
         --availability-zone us-east-1a \
