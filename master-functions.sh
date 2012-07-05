@@ -69,25 +69,25 @@ distribute_init() {
     
     # DANGER: I'M DOING THIS ON A CUSTOM NODE
     cat ~/instance_addr_list | \
-        parallel "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j0 "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "scp -r .ssh {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j0 "scp -r .ssh {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j0 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel "ssh -t -t {} sudo yum -q -y install git"
-    parallel --nonall -S .. git clone git@github.com:sstults/patent-indexing.git
+        parallel  -j0 "ssh -t -t {} sudo yum -q -y install git"
+    parallel --nonall -j0 -S .. git clone git@github.com:sstults/patent-indexing.git
 }
 
 node_init() {
     cat ~/instance_addr_list | \
-        parallel "ssh -t -t {} sh patent-indexing/node-init.sh"
+        parallel -j0 "ssh -t -t {} sh patent-indexing/node-init.sh"
 }
 
 load_sample() {
     head -n $MAX_NODES patent-indexing/zip_urls.txt | \
         parallel --tag --use-cpus-instead-of-cores \
-        -S .. sh patent-indexing/single_load.sh {}
+        -j0 -S .. sh patent-indexing/single_load.sh {}
 }
 
 ready_nodes() {
@@ -99,7 +99,7 @@ ready_nodes() {
     distribute_init
     node_init
     # Do something interesting to show we're all up
-    parallel --tag --nonall -S .. ls /var/log/solr/'*.log'
+    parallel -j0 --tag --nonall -S .. ls /var/log/solr/'*.log'
 }
 
 do_test() {
