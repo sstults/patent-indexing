@@ -60,6 +60,7 @@ terminate_instances() {
     rm ~/instance_list
     rm ~/start_nodes.out
     rm ~/.parallel/sshloginfile
+    rm ~/.ssh/known_hosts
 }
 
 distribute_init() {
