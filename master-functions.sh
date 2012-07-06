@@ -69,25 +69,36 @@ distribute_init() {
     
     # DANGER: I'M DOING THIS ON A CUSTOM NODE
     cat ~/instance_addr_list | \
-        parallel -j0 "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j50 "scp -r .aws_creds {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel -j0 "scp -r .ssh {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j50 "scp -r .ssh {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel -j0 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
+        parallel -j50 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel  -j0 "ssh -t -t {} sudo yum -q -y install git"
-    parallel --nonall -j0 -S .. git clone git@github.com:sstults/patent-indexing.git
+        parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
+    parallel --nonall -j50 -S .. git clone git@github.com:sstults/patent-indexing.git
 }
 
 node_init() {
     cat ~/instance_addr_list | \
-        parallel -j0 "ssh -t -t {} sh patent-indexing/node-init.sh"
+        parallel -j50 "ssh -t -t {} sh patent-indexing/node-init.sh"
 }
 
 load_sample() {
     head -n $MAX_NODES patent-indexing/zip_urls.txt | \
         parallel --tag --use-cpus-instead-of-cores \
         -S .. sh patent-indexing/single_load.sh {}
+}
+
+terminate_nonpassing_nodes() {
+    ec2-describe-instance-status | grep impaired | cut -f 2 > impaired
+    
+    # I wish we could just do the below as a separate job and continue
+    # but I've noticed weird I/O blocking when running multiple ec2- programs
+    cat impaired | xargs ec2-terminate-instances
+    
+    grep -v -f impaired instance_list > instance_list.tmp
+    mv instance_list.tmp instance_list
 }
 
 ready_nodes() {
@@ -99,13 +110,13 @@ ready_nodes() {
     distribute_init
     node_init
     # Do something interesting to show we're all up
-    parallel -j0 --tag --nonall -S .. ls /var/log/solr/'*.log'
+    parallel -j50 --tag --nonall -S .. ls /var/log/solr/'*.log'
 }
 
 do_test() {
     time ready_nodes
     time load_sample
-    cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo service jetty stop"
-    cat ~/instance_addr_list | parallel -j0 "ssh -t -t {} sudo umount /media/ebs"
-    parallel --nonall -j0 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
+    cat ~/instance_addr_list | parallel -j50 "ssh -t -t {} sudo service jetty stop"
+    cat ~/instance_addr_list | parallel -j50 "ssh -t -t {} sudo umount /media/ebs"
+    parallel --nonall -j50 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
 }
