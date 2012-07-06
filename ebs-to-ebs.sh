@@ -5,16 +5,14 @@
 if [ $# -lt 2 ]
 then
   echo
-  echo "Usage: ebs-to-ebs.sh vol_id1 vol_id2 [vol_idn...]"
+  echo "Usage: ebs-to-ebs.sh vol_id1 vol_id2 [vol_id3...]"
   exit 0
 fi  
 
-EBS_VOL1=$1
-EBS_VOL2=$2
-EBS_VOL3=""
+args=("$@")
+VOLS=$#
+EBS_VOLt=""
 EBS_SIZE=""
-MNT1=/dev/sdf1
-MNT2=/dev/sdf2
 EC2_INSTANCE_ID="`wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`"
 EC2_PRIVATE_KEY=~/.aws_creds/pk-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
 EC2_CERT=~/.aws_creds/cert-SS5MTCPI5NCLXEBYWAXPLRKQJRXWDPW7.pem
@@ -22,20 +20,16 @@ export EC2_PRIVATE_KEY EC2_CERT
 
 log() {
     # might do something interesting here, but for now it's good for trimming STDOUT
-    if [ "$LOGGING" == "false" ]; then
-        echo -e $@
-    else
-        echo -e $@ >> ~/${EC2_INSTANCE_ID}.out
-    fi
+    echo -e "$@"
 }
 
 get_ebs_state() {
-    echo "** get_ebs_state $1 $2 **"
+    log "** get_ebs_state $@ **"
     ec2-describe-volumes $2 | grep $1 | cut -f 6
 }
 
 wait_for_ebs() {
-    echo "** wait_for_ebs $1 $2 $3 **"
+    log "** wait_for_ebs $@ **"
     while [ `get_ebs_state $1 $3 | grep $2 | wc -l` -gt 0 ]
     do
         sleep 15
@@ -43,6 +37,7 @@ wait_for_ebs() {
 }
 
 wait_for_device() {
+    log "** wait_for_device $@ **"
     # We seem to need to wait a little for the OS to show the volume
     while [ ! -h $1 ]
     do
@@ -51,80 +46,113 @@ wait_for_device() {
 }
 
 attach_volumes() {
-    ec2-attach-volume $EBS_VOL1 --instance $EC2_INSTANCE_ID --device /dev/sdf1
-    ec2-attach-volume $EBS_VOL2 --instance $EC2_INSTANCE_ID --device /dev/sdf2
-    wait_for_device /dev/sdf1
-    wait_for_device /dev/sdf2
+    log "** attach_volumes $@ **"
+    for (( c=0; c<$VOLS; c++ ))
+    do
+        ec2-attach-volume ${args[$c]} --instance $EC2_INSTANCE_ID --device /dev/sdf$(( $c + 1 ))
+    done
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        wait_for_device /dev/sdf${c}
+    done
 }
 
 attach_volume() {
-    ec2-attach-volume $EBS_VOL3 --instance $EC2_INSTANCE_ID --device /dev/sdf3
-    wait_for_ebs ATTACHMENT attaching $EBS_VOL3
-    wait_for_device /dev/sdf3
+    log "** attach_volume $@ **"
+    ec2-attach-volume $EBS_VOLt --instance $EC2_INSTANCE_ID --device /dev/sdt
+    wait_for_ebs ATTACHMENT attaching $EBS_VOLt
+    wait_for_device /dev/sdt
 }
 
 create_core() {
-    CURL="http://localhost:8983/solr/admin/cores?action=CREATE"
+    log "** create_core $@ **"
+    CURL="http://localhost:8983/solr/admin/cores?wt=json&indent=true&action=CREATE"
     IDIR="instanceDir=/home/ec2-user/patent-indexing/solr/dir_search_cores/us_patent_grant_v2_0/"
     CFILE="config=solrconfig.xml"
     SFILE="schema=schema.xml"
-    DDIR="dataDir=/media/ebs3/data"
+    DDIR="dataDir=/media/ebst/data"
     curl "${CURL}&name=${EC2_INSTANCE_ID}&${IDIR}&${CFILE}&${SFILE}&${DDIR}"
 }
 
 merge_to_ebs() {
-    CURL="http://localhost:8983/solr/admin/cores?action=mergeindexes"
-    CORE="core=${EC2_INSTANCE_ID}"
-    DIR1="indexDir=/media/ebs1/data/index"
-    DIR2="indexDir=/media/ebs2/data/index"
-    curl "${CURL}&${CORE}&${DIR1}&${DIR2}"
+    log "** merge_to_ebs $@ **"
+    CURL="http://localhost:8983/solr/admin/cores?wt=json&indent=true&action=mergeindexes"
+    CURL="${CURL}&core=${EC2_INSTANCE_ID}"
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        CURL="${CURL}&core=${EC2_INSTANCE_ID}&indexDir=/media/ebs$(( $c ))/data/index"
+    done
+    curl $CURL
 }
 
 create_volume() {
-    sudo mkdir -p /media/ebs1
-    sudo mkdir -p /media/ebs2
-    sudo mount /dev/sdf1 /media/ebs1
-    sudo mount /dev/sdf2 /media/ebs2
+    log "** create_volume $@ **"
 
-    INDEX1_SIZE=`du -s /media/ebs1/data | cut -f 1`
-    INDEX2_SIZE=`du -s /media/ebs2/data | cut -f 1`
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        sudo mkdir -p /media/ebs$(( $c ))
+    done
+
+    sudo mkdir -p /media/ebst
+
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        sudo mount /dev/sdf${c} /media/ebs${c}
+    done
+
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        DU=`du -s /media/ebs${c}/data | cut -f 1`
+        EBS_SIZE=$(( $EBS_SIZE + $DU ))
+    done
     # do some funky math to give us some headway in our new volume
-    EBS_SIZE=`echo "((${INDEX1_SIZE} + ${INDEX2_SIZE})*3/2000000)+1" | bc`
+    EBS_SIZE=`echo "((${EBS_SIZE} + 0)*3/2000000)+1" | bc`
 
     region=`ec2-describe-instances $EC2_INSTANCE_ID | grep INSTANCE | cut -f 12`
     ec2-create-volume --size ${EBS_SIZE} -z $region > ~/ebs-create-log
-    echo "** create_volume **"
-    EBS_VOL3=`tail -n 1 ~/ebs-create-log | grep VOLUME | cut -f 2`
-    wait_for_ebs VOLUME creating $EBS_VOL3
+    echo "** create_volume ${EBS_SIZE} **"
+    EBS_VOLt=`tail -n 1 ~/ebs-create-log | grep VOLUME | cut -f 2`
+    wait_for_ebs VOLUME creating $EBS_VOLt
 
     attach_volume    
     
-    sudo mkfs.ext4 /dev/sdf3 > /dev/null
-    sudo mkdir -p /media/ebs3
-    sudo mount /dev/sdf3 /media/ebs3
-    sudo mkdir /media/ebs3/data
-    sudo chown ec2-user:ec2-user /media/ebs3/data
+    sudo mkfs.ext4 /dev/sdt > /dev/null
+    sudo mkdir -p /media/ebst
+    sudo mount /dev/sdt /media/ebst
+    sudo mkdir /media/ebst/data
+    sudo chown ec2-user:ec2-user /media/ebst/data
 }
 
 unmount_detach() {
-    sudo umount /dev/sdf1
-    sudo umount /dev/sdf2
-    sudo umount /dev/sdf3
-    ec2-detach-volume $EBS_VOL1
-    ec2-detach-volume $EBS_VOL2
-    ec2-detach-volume $EBS_VOL3
-    wait_for_ebs ATTACHMENT detaching $EBS_VOL1
-    wait_for_ebs ATTACHMENT detaching $EBS_VOL2
-    wait_for_ebs ATTACHMENT detaching $EBS_VOL3
+    log "** unmount_detach $@ **"
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        sudo umount /dev/sdf$(( $c ))
+    done
+    sudo umount /dev/sdt
+
+    
+    for (( c=0; c<$VOLS; c++ ))
+    do
+        ec2-detach-volume ${args[$c]}
+    done
+    ec2-detach-volume $EBS_VOLt
+
+    for (( c=0; c<$VOLS; c++ ))
+    do
+        wait_for_ebs ATTACHMENT detaching ${args[$c]}
+    done
+    wait_for_ebs ATTACHMENT detaching $EBS_VOLt
 }
 
 sudo service jetty start
 attach_volumes
 create_volume
-log "Index1Size:${INDEX1_SIZE} Index2Size:${INDEX2_SIZE} EBSSize:${EBS_SIZE} NewEBS:${EBS_VOL3}"
+
+log "EBSSize:${EBS_SIZE} NewEBS:${EBS_VOLt}"
 
 create_core
 merge_to_ebs
 sudo service jetty stop
-sleep 15
+(cd ~/patent-indexing; git checkout solr/dir_search_cores/solr.xml)
 unmount_detach
