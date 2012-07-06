@@ -118,6 +118,7 @@ unmount_detach() {
     wait_for_ebs ATTACHMENT detaching $EBS_VOL3
 }
 
+sudo service jetty start
 attach_volumes
 create_volume
 log "Index1Size:${INDEX1_SIZE} Index2Size:${INDEX2_SIZE} EBSSize:${EBS_SIZE} NewEBS:${EBS_VOL3}"
