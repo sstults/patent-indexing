@@ -124,4 +124,6 @@ log "Index1Size:${INDEX1_SIZE} Index2Size:${INDEX2_SIZE} EBSSize:${EBS_SIZE} New
 
 create_core
 merge_to_ebs
+sudo service jetty stop
+sleep 15
 unmount_detach
