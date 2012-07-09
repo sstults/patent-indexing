@@ -76,7 +76,11 @@ distribute_init() {
         parallel -j50 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
         parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
+        
+    # This is bombing. rsync? bittorrent? s3? custom ami? targeted from the indexing node?
     parallel --nonall -j50 -S .. git clone git@github.com:sstults/patent-indexing.git
+    # Just to be sure
+    parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
 }
 
 node_init() {
@@ -105,6 +109,8 @@ ready_nodes() {
     start_nodes
     make_instance_list
     wait_for_pending_nodes
+    terminate_nonpassing_nodes
+    # need to bring node count back up to max
     make_addr_list
     make_ssh_login_file
     distribute_init
