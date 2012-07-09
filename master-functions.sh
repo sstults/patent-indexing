@@ -10,7 +10,7 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 start_nodes() {
     ec2-run-instances ami-e565ba8c   \
         --block-device-mapping '/dev/sdi=:9:false'   \
-        --instance-type m1.medium   \
+        --instance-type $1   \
         --key uspto-jenkins     \
         --availability-zone us-east-1a \
         --instance-count $MAX_NODES  \
@@ -106,7 +106,7 @@ terminate_nonpassing_nodes() {
 }
 
 ready_nodes() {
-    start_nodes
+    start_nodes m1.medium
     make_instance_list
     wait_for_pending_nodes
     terminate_nonpassing_nodes
@@ -126,3 +126,4 @@ do_test() {
     cat ~/instance_addr_list | parallel -j50 "ssh -t -t {} sudo umount /media/ebs"
     parallel --nonall -j50 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
 }
+
