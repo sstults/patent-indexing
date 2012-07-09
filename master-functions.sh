@@ -10,7 +10,7 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 start_nodes() {
     ec2-run-instances ami-e565ba8c   \
         --block-device-mapping '/dev/sdi=:9:false'   \
-        --instance-type m1.medium   \
+        --instance-type $1   \
         --key uspto-jenkins     \
         --availability-zone us-east-1a \
         --instance-count $MAX_NODES  \
@@ -91,7 +91,7 @@ load_sample() {
 }
 
 ready_nodes() {
-    start_nodes
+    start_nodes m1.medium
     make_instance_list
     wait_for_pending_nodes
     make_addr_list
