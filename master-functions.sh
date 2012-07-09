@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MAX_FORK=5
-MAX_NODES=2
+MAX_FORK=${MAX_FORK:-5}
+MAX_NODES=${MAX_NODES:-2}
 SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 
 # I'm assuming that the EC2_PRIVATE_KEY and EC2_CERT environment variables are
@@ -10,7 +10,7 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 start_nodes() {
     ec2-run-instances ami-e565ba8c   \
         --block-device-mapping '/dev/sdi=:9:false'   \
-        --instance-type $1   \
+        --instance-type ${1:-m1.medium}   \
         --key uspto-jenkins     \
         --availability-zone us-east-1a \
         --instance-count $MAX_NODES  \
@@ -106,7 +106,7 @@ terminate_nonpassing_nodes() {
 }
 
 ready_nodes() {
-    start_nodes m1.medium
+    start_nodes ${1:-m1.medium}
     make_instance_list
     wait_for_pending_nodes
     terminate_nonpassing_nodes
@@ -127,3 +127,22 @@ do_test() {
     parallel --nonall -j50 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
 }
 
+merge() {
+    # TODO: Use tags to mark these volumes when they're created instead of the magic "9" size
+    ec2-describe-volumes --filter "size=9" | \
+        grep VOLUME | cut -f 2 > ~/stage1-vols
+    VOLS=`wc -l ~/stage1-vols | cut -f 1 -d " "`
+    MAX_NODES=`echo "$VOLS/5" | bc`
+    start_nodes m1.large
+    make_instance_list
+    wait_for_pending_nodes
+    terminate_nonpassing_nodes
+    make_addr_list
+    make_ssh_login_file
+    distribute_init
+    node_init
+    cat ~/stage1-vols | xargs -n 5 echo | paste ~/instance_addr_list  - | grep vol > ~/stage1-assignments
+    parallel -j50 --tag --nonall -S .. ls /var/log/solr/'*.log'
+    cat stage1-assignments | awk 'BEGIN { FS = "[ \t]*|[ \t]+" }{ print "echo -t -t", $1, $2, $3, $4, $5, $6}' > stage1-commands
+    cat stage1-commands | parallel -j50 -a stage1-commands --tag
+}
