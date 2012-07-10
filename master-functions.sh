@@ -127,7 +127,7 @@ do_test() {
     parallel --nonall -j50 -S .. cd patent-indexing ";" git checkout solr/dir_search_cores/solr.xml
 }
 
-merge() {
+stage2() {
     # TODO: Use tags to mark these volumes when they're created instead of the magic "9" size
     ec2-describe-volumes --filter "size=9" | \
         grep VOLUME | cut -f 2 > ~/stage1-vols
@@ -143,6 +143,28 @@ merge() {
     node_init
     cat ~/stage1-vols | xargs -n 5 echo | paste ~/instance_addr_list  - | grep vol > ~/stage1-assignments
     parallel -j50 --tag --nonall -S .. ls /var/log/solr/'*.log'
-    cat stage1-assignments | awk 'BEGIN { FS = "[ \t]*|[ \t]+" }{ print "echo -t -t", $1, $2, $3, $4, $5, $6}' > stage1-commands
-    cat stage1-commands | parallel -j50 -a stage1-commands --tag
+    cat stage1-assignments | awk 'BEGIN { FS = "[ \t]*|[ \t]+" }{ print "ssh -t -t", $1, "sh patent-indexing/ebs-to-ebs.sh", $2, $3, $4, $5, $6}' > stage1-commands
+    parallel -j50 -a stage1-commands --tag
+}
+
+stage3() {
+
+    wc -l stage2-vols
+
+    head -n 12 instance_list > stage3_instance_list
+    tail -n $(( 60 - 12 )) instance_list
+    tail -n $(( 60 - 12 )) instance_list  | wc -l
+    tail -n $(( 60 - 12 )) instance_list  > expiring-nodes_stage2
+    cp expiring-nodes_stage2 instance_list
+    terminate_instances
+
+    cp stage3_instance_list instance_list
+    make_addr_list
+    cat instance_addr_list
+    make_ssh_login_file
+
+    cat stage2-vols
+    cat ~/stage2-vols | xargs -n 5 echo | paste ~/instance_addr_list  - | grep vol > ~/stage3-assignments
+    cat stage3-assignments | awk 'BEGIN { FS = "[ \t]*|[ \t]+" }{ print "ssh -t -t", $1, "sh patent-indexing/ebs-to-ebs.sh", $2, $3, $4, $5, $6}' > stage3-commands
+    cat stage3-commands | parallel -j50 -a stage1-commands --tag
 }
