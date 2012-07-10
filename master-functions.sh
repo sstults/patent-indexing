@@ -62,6 +62,12 @@ terminate_instances() {
     rm ~/.ssh/known_hosts
 }
 
+# This is only needed to put the tar into S3
+prepare_distribution() {
+    tar -cjf patent-indexing-1.0.tar.bz2 patent-indexing
+    s3put -b grant-xml patent-indexing-1.0.tar.bz2
+}
+
 distribute_init() {
     # Doing this through git clone now so we don't have a single choke point
     #cat ~/instance_addr_list | \
@@ -75,11 +81,19 @@ distribute_init() {
     cat ~/instance_addr_list | \
         parallel -j50 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
+        parallel -j50 "scp /etc/yum.repos.d/s3tools.repo {}: 2>&1 | grep -v 'Permanently added'"
+    cat ~/instance_addr_list | \
+        parallel  -j50 "ssh -t -t {} sudo mv s3tools.repo /etc/yum.repos.d"
+    cat ~/instance_addr_list | \
+        parallel  -j50 "ssh -t -t {} sudo yum -q -y install s3cmd"
+    cat ~/instance_addr_list | \
+        parallel -j50 "scp .s3cfg {}: 2>&1 | grep -v 'Permanently added'"
+    cat ~/instance_addr_list | \
         parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
         
     # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? targeted from the indexing node?
-    # Trying a local repo clone
-    parallel --nonall -S .. git clone ssh://ec2-user@ip-10-40-63-236/home/ec2-user/patent-indexing
+    # local repo clone takes too long
+    parallel --nonall -j50 -S .. s3cmd 
     # Just to be sure
     parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
 }
