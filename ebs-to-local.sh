@@ -137,15 +137,16 @@ unmount_detach() {
     done
 }
 
+setup() {
+    create_target_volume
+    attach_volume
+    create_core
+}
+
 process() {
     log "** process $@ **"
 
-    # Assume jetty's already running
-    #sudo service jetty start
-    
     attach_volumes
-
-    #create_core
     merge_to_ebs
     unmount_detach
 }
