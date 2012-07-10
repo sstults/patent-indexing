@@ -91,9 +91,10 @@ distribute_init() {
     cat ~/instance_addr_list | \
         parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
         
-    # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? targeted from the indexing node?
+    # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? ebs made from a snapshot?
     # local repo clone takes too long
-    parallel --nonall -j50 -S .. s3cmd 
+    parallel --nonall -j50 -S .. s3cmd get s3://grant-xml/patent-indexing-1.0.tar.bz2 patent-indexing-1.0.tar.bz2
+    parallel --nonall -j50 -S .. tar -jxf patent-indexing-1.0.tar.bz2
     # Just to be sure
     parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
 }
