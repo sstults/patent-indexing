@@ -2,13 +2,6 @@
 
 # Attaches two EBS volumes and merges them to a third
 
-if [ $# -lt 2 ]
-then
-  echo
-  echo "Usage: ebs-to-local.sh vol_id1 vol_id2 [vol_id3...]"
-  exit 0
-fi  
-
 args=("$@")
 HOST=${SOLR_HOST:-localhost}
 CORE=${SOLR_CORE:-us_patent_grant}
@@ -147,6 +140,9 @@ process() {
     log "** process $@ **"
 
     attach_volumes
+    mount_volumes
     merge_to_ebs
     unmount_detach
 }
+
+process
