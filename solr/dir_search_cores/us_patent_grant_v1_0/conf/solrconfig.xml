@@ -7,7 +7,6 @@
 <config>
 	<luceneMatchVersion>LUCENE_40</luceneMatchVersion>
   <lib path="../../apache-solr-4.0-trunk/contrib/BrsQueryParserPlugin-0.0.1-SNAPSHOT.jar" />  
-  <lib path="../../apache-solr-4.0-trunk/contrib/DIRProcessorChain-0.0.1-SNAPSHOT.jar" />  
   <dataDir>${solr.us_patent_grant.data.dir:}</dataDir>
   
   <!-- index time configurations -->
@@ -63,14 +62,19 @@
   <!-- The default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
     <autoCommit> 
-        <maxDocs>1000</maxDocs>
-        <maxTime>600000</maxTime> 
+        <maxDocs>10000</maxDocs>
+        <maxTime>1000</maxTime> 
     </autoCommit>
+
+    <autoSoftCommit> 
+        <maxDocs>10000</maxDocs>
+        <maxTime>1000</maxTime> 
+    </autoSoftCommit>
   </updateHandler>
 
   <!-- query time configurations -->
   <query>
-    <maxBooleanClauses>16384</maxBooleanClauses>
+    <maxBooleanClauses>1024</maxBooleanClauses>
     <filterCache class="solr.FastLRUCache"
         size="512" initialSize="512" autowarmCount="128"/>
     <queryResultCache class="solr.LRUCache"
@@ -183,7 +187,7 @@
   </query>
 
   <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" />
   </requestDispatcher>
 
@@ -201,22 +205,22 @@
 	  <str name="defType">edismax</str>
       <str name="echoParams">all</str>      
       <str name="q.alt">*:*</str>
-      <str name="mm">100%</str>
-      <str name="qf">claims id doc_number invention_title abstract description text_rev</str>
-      <str name="pf">claims invention_title abstract description</str>      
+      <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
+      <str name="qf">claim_text id doc_number invention_title abstract description text_rev</str>
+      <str name="pf">claim_text invention_title abstract description</str>      
       <int name="ps">3</int>
       <float name="tie">0.01</float>
       <!-- Seem to need it all on one line with no spaces for Solr 4.0-->
-      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,main_classification_std,further_classification,invention_title,abstract,claims,description,applicant_inventor_last_name_s,cpc_code</str>     
+      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,further_classification,invention_title,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
       <str name="facet">true</str>
       <str name="facet.mincount">1</str>
-
       <str name="facet.limit">10</str>
-      <str name="facet.field">category_facet</str>
-      <str name="facet.field">cpc_facet</str>
-      <str name="facet.field">date_publ_facet</str>
-      <str name="facet.field">applicant_inventor_last_name_s</str>
+      <str name="facet.field">main_classification</str>
+      <str name="facet.field">further_classification</str>
       <str name="facet.field">assignee_orgname_s</str>
+      <str name="facet.field">applicant_inventor_last_name_s</str>
+      <str name="facet.field">date_publ</str>
+      <str name="facet.field">date_produced</str>
 
       <str name="hl.highlightMultiTerm">true</str>
       <str name="hl.fragsize">200</str>
@@ -225,15 +229,8 @@
       <str name="hl.mergeContiguous">true</str>      
       <str name="hl.fragmentsBuilder">colored</str>
       <str name="hl.fragListBuilder">simple</str>
-      <str name="hl.fl">invention_title_html,abstract,description,claims</str>
+      <str name="hl.fl">invention_title,abstract,description,claim_text</str>
       <str name="hl.usePhraseHighlighter">true</str>
-
-      <str name="hl">true</str>
-      <str name="f.abstract.hl.alternateField">abstract</str>
-      <str name="f.description.hl.alternateField">description</str>
-      <str name="f.claims.hl.alternateField">claims</str>
-      <str name="f.invention_title.hl.alternateField">invention_title</str>
-
     </lst>
   </requestHandler>
   
@@ -241,17 +238,17 @@
   <requestHandler name="document" class="solr.SearchHandler" >
     <lst name="defaults">
       <str name="echoParams">all</str>
-      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,main_classification_std,further_classification,invention_title_html,abstract_html,description_html,claims_html,applicant_inventor_last_name_s</str>     
-      <str name="qf">id</str>
-      <str name="pf">claims invention_title abstract description</str>      
+      <str name="fl">*</str>
       <str name="rows">1</str>
       <str name="q">{!raw f=id v=$id}</str> <!-- use id=666 instead of q=id:666 -->
 
       <str name="hl.highlightMultiTerm">true</str>
+      <str name="hl.fragsize">200</str>
       <str name="hl.useFastVectorHighlighter">true</str>
+      <str name="hl.snippets">200</str>
       <str name="hl.fragmentsBuilder">colored</str>
-      <str name="hl.fragListBuilder">single</str>
-      <str name="hl.fl">*</str>
+      <str name="hl.fragListBuilder">simple</str>
+      <str name="hl.fl">invention_title,abstract,description,claim_text</str>
       <str name="hl.usePhraseHighlighter">true</str>
     </lst>
   </requestHandler>
@@ -262,10 +259,12 @@
       <str name="defType">lucene</str>
       <str name="echoParams">explicit</str>
       <str name="sort">score desc, date_publ desc</str>   
-      <str name="df">text_html</str> 
+      <str name="df">text</str> 
       <str name="q.op">AND</str> 
+      <str name="qs">1</str>
+
       <!-- used for dismax query parser -->
-      <str name="mm">100%</str> 
+      <str name="mm">1</str> 
       <str name="ps">3</str> 
       <float name="tie">0.01</float>
       
@@ -326,7 +325,7 @@
       <!--str name="qf_keyword">text</str>
       <str name="pf_keyword">text^10</str-->
       
-      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,main_classification_std,further_classification,invention_title_html,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
+      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,further_classification,invention_title,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
 
       <str name="facet">true</str>
       <str name="facet.mincount">1</str>
@@ -488,29 +487,10 @@
   </searchComponent>
 
   
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler">
-    <lst name="defaults">
-      <str name="update.chain">text_structure</str>
-    </lst>
-  </requestHandler>  
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
   <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler" />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
-    <lst name="defaults">
-      <str name="update.chain">text_structure</str>
-    </lst>
-  </requestHandler>  
-
-  <updateRequestProcessorChain name="text_structure">
-		<processor class="com.o19s.uspto.update.processor.TextStructureParserUpdateProcessorFactory">
-	    <!-- Can take defaults, invariants and appends just like req handlers-->
-	    <lst name="defaults">
-	      <bool name="text_structure">true</bool>
-	      <str name="text_structure.fl">description_html,abstract_html,claims_html</str>
-	    </lst>
-		</processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler"/>
   
   <requestHandler name="/analysis/document" 
                   class="solr.DocumentAnalysisRequestHandler" 
@@ -553,43 +533,32 @@
   <requestHandler name="brs" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="defType">brs</str>
-      <str name="df">text_html</str>
-      <str name="maxBasicQueries">10000</str>
-      <str name="q.alt">*:*</str>
-      <str name="mm">100%</str>
-      <str name="qf">claim_text id doc_number invention_title_html abstract description text_rev</str>
+      <str name="df">description_para</str>
+      <str name="qf">claim_text id doc_number invention_title abstract description</str>
       <str name="pf">claim_text invention_title abstract description</str>      
       <int name="ps">3</int>
       <str name="echoParams">all</str>      
       <!-- Seem to need it all on one line with no spaces for Solr 4.0-->
-      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,main_classification_std,further_classification,invention_title,abstract,description,claims,applicant_inventor_last_name_s,cpc_code</str>     
+      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,further_classification,invention_title,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
       <str name="facet">true</str>
       <str name="facet.mincount">1</str>
-
       <str name="facet.limit">10</str>
-      <str name="facet.field">category_facet</str>
-      <str name="facet.field">date_publ_facet</str>
-      <str name="facet.field">cpc_facet</str>
-      <str name="facet.field">applicant_inventor_last_name_s</str>
+      <str name="facet.field">main_classification</str>
+      <str name="facet.field">further_classification</str>
       <str name="facet.field">assignee_orgname_s</str>
+      <str name="facet.field">applicant_inventor_last_name_s</str>
+      <str name="facet.field">date_publ</str>
+      <str name="facet.field">date_produced</str>
 
-
-      <str name="hl">true</str>
       <str name="hl.highlightMultiTerm">true</str>
-      <str name="hl.fragsize">300</str>
-      <str name="hl.useFastVectorHighlighter">true</str>
+      <str name="hl.fragsize">200</str>
       <str name="hl.snippets">10</str>
       <str name="hl.mergeContiguous">true</str>      
-      <str name="hl.fragmentsBuilder">colored</str>
-      <str name="hl.fragListBuilder">simple</str>
-      <str name="hl.fl">invention_title_html,abstract,description,claims</str>
+      <str name="hl.fl">invention_title,abstract,description,claim_text</str>
+      <str name="f.description.hl.alternateField">description_para</str>
+      <str name="f.abstract.hl.alternateField">abstract_para</str>
+      <str name="f.claim_text.hl.alternateField">claim_text_para</str>
       <str name="hl.usePhraseHighlighter">true</str>
-      <str name="f.abstract.hl.alternateField">abstract</str>
-      <str name="f.description.hl.alternateField">description</str>
-      <str name="f.claims.hl.alternateField">claims</str>
-      <str name="f.invention_title.hl.alternateField">invention_title</str>
-      <str name="hl.maxAlternateFieldLength">300</str>     
-
     </lst>
   </requestHandler>
 
@@ -599,7 +568,7 @@
       <str name="df">text</str>
       <str name="echoParams">all</str>      
       <!-- Seem to need it all on one line with no spaces for Solr 4.0-->
-      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,main_classification_std,further_classification,invention_title_html,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
+      <str name="fl">id,doc_number,date_produced,date_publ,main_classification,further_classification,invention_title,abstract,description,claim_text,applicant_inventor_last_name_s</str>     
       <str name="facet">true</str>
       <str name="facet.mincount">1</str>
       <str name="facet.limit">10</str>

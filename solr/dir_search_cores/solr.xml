@@ -2,6 +2,9 @@
 <solr persistent="true">
   <cores adminPath="/admin/cores" zkClientTimeout="10000" hostPort="8983" hostContext="solr">
     <core instanceDir="us_patent_grant_v2_0" name="us_patent_grant" dataDir="../data/us_patent_grant_v2_0"/>
+    <core instanceDir="us_patent_grant_v1_0" name="us_patent_grant_v1_0" dataDir="../data/us_patent_grant_v1_0"/>
     <core instanceDir="us_patent_grant_v2_0" name="us_patent_grant_v2_0" dataDir="../data/us_patent_grant_v2_0"/>
+    <core instanceDir="us_patent_grant_v3_0" name="us_patent_grant_v3_0" dataDir="../data/us_patent_grant_v3_0"/>
+    <core instanceDir="classifications" name="classifications" dataDir="../data/classifications"/>
   </cores>
 </solr>

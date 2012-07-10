@@ -1,5 +1,5 @@
 #JAVA_HOME=/usr/java/default
-SOLR_ROOT="/home/ec2-user/patent-indexing/solr"
+SOLR_ROOT="/home/ec2-user/dir_search/solr"
 SOLR_DIR="${SOLR_ROOT}/apache-solr-4.0-trunk/example"
 SOLR_OPTIONS="-Dsolr.solr.home=${SOLR_ROOT}/dir_search_cores/"
 JAVA_OPTIONS="${SOLR_OPTIONS} $JAVA_OPTIONS"
