@@ -77,8 +77,9 @@ distribute_init() {
     cat ~/instance_addr_list | \
         parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
         
-    # This is bombing. rsync? bittorrent? s3? custom ami? targeted from the indexing node?
-    parallel --nonall -j50 -S .. git clone git@github.com:sstults/patent-indexing.git
+    # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? targeted from the indexing node?
+    # Trying a local repo clone
+    parallel --nonall -S .. git clone ssh://ec2-user@ip-10-40-63-236/home/ec2-user/patent-indexing
     # Just to be sure
     parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
 }
