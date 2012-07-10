@@ -17,9 +17,6 @@ sudo newaliases
 sudo cp ~/patent-indexing/tange.repo /etc/yum.repos.d/
 sudo yum -y -q install parallel
 
-(cd /etc/yum.repos.d; sudo wget http://s3tools.org/repo/CentOS_6/s3tools.repo)
-sudo yum -y -q install s3cmd
-
 #
 # Solr
 #
