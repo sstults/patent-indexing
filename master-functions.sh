@@ -8,7 +8,7 @@ SSH_ARGS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=false"
 # set to something appropriate
 
 start_nodes() {
-    ec2-run-instances ami-e565ba8c   \
+    ec2-run-instances ami-f9d67a90   \
         --block-device-mapping '/dev/sdi=:9:false'   \
         --instance-type ${1:-m1.medium}   \
         --key uspto-jenkins     \
@@ -93,8 +93,8 @@ distribute_init() {
         
     # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? ebs made from a snapshot?
     # local repo clone takes too long
-    parallel --nonall -j50 -S .. s3cmd get s3://grant-xml/patent-indexing-1.0.tar.bz2 patent-indexing-1.0.tar.bz2
-    parallel --nonall -j50 -S .. tar -jxf patent-indexing-1.0.tar.bz2
+    #parallel --nonall -j50 -S .. s3cmd get s3://grant-xml/patent-indexing-1.0.tar.bz2 patent-indexing-1.0.tar.bz2
+    #parallel --nonall -j50 -S .. tar -jxf patent-indexing-1.0.tar.bz2
     # Just to be sure
     parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
 }
@@ -114,7 +114,7 @@ terminate_nonpassing_nodes() {
     ec2-describe-instance-status | grep impaired | cut -f 2 > impaired
 
     # Sometimes EC2 doesn't mount the devices we ask for on startup
-    parallel --tag -S .. --nonall test ! -h /dev/sdi "&&" echo >> impaired
+    parallel -S .. --nonall test ! -h /dev/sdi "&&" "echo `wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`" | cut -f 2 >> impaired
     
     # I wish we could just do the below as a separate job and continue
     # but I've noticed weird I/O blocking when running multiple ec2- programs
