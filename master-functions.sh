@@ -87,23 +87,12 @@ distribute_init() {
     cat ~/instance_addr_list | \
         parallel -j50 "scp .bash_profile {}: 2>&1 | grep -v 'Permanently added'"
     cat ~/instance_addr_list | \
-        parallel -j50 "scp /etc/yum.repos.d/s3tools.repo {}: 2>&1 | grep -v 'Permanently added'"
-    # s3cmd stuff isn't on the custom ami and isn't needed
-    #cat ~/instance_addr_list | \
-    #    parallel  -j50 "ssh -t -t {} sudo mv s3tools.repo /etc/yum.repos.d"
-    #cat ~/instance_addr_list | \
-    #    parallel  -j50 "ssh -t -t {} sudo yum -q -y install s3cmd"
-    cat ~/instance_addr_list | \
-        parallel -j50 "scp .s3cfg {}: 2>&1 | grep -v 'Permanently added'"
-    cat ~/instance_addr_list | \
         parallel  -j50 "ssh -t -t {} sudo yum -q -y install git"
         
     # Clone from Github is bombing. rsync? bittorrent? s3? custom ami? ebs made from a snapshot?
     # local repo clone takes too long
-    #parallel --nonall -j50 -S .. s3cmd get s3://grant-xml/patent-indexing-1.0.tar.bz2 patent-indexing-1.0.tar.bz2
-    #parallel --nonall -j50 -S .. tar -jxf patent-indexing-1.0.tar.bz2
+
     # Just to be sure
-    #parallel --nonall -j50 -S .. cd patent-indexing ";" git pull
     cat ~/instance_addr_list | \
         parallel  -j50 "ssh -A {} 'cd patent-indexing; git pull'"
 }
