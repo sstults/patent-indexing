@@ -43,16 +43,50 @@
     "<xsl:value-of select='$name'/>_facet":["0/<xsl:value-of select="$date_y"/>","1/<xsl:value-of select="$date_y"/>/<xsl:value-of select="$date_m"/>"]
 </xsl:template>
 
+<!-- CPC facet lookup, by CPC facet id. -->
+<xsl:key name="cpc-facet-lookup" match="classification" use="@id"/>
+<xsl:variable name="cpc-facet-top" select="document('cpc_facets.xml')/cpc"/>
+<xsl:template match="cpc" mode="cpc">
+  <xsl:param name="cpc_id"/>
+  <xsl:for-each select="key('cpc-facet-lookup', $cpc_id)/term">
+    "<xsl:value-of select="."/>"<xsl:if test="not(position() = last())">,</xsl:if>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- CPC Classification Lookup by patent id -->
+<xsl:key name="cpc-lookup" match="patent" use="@id"/>
+<xsl:variable name="cpc-top" select="document('cpc_2005_2010.xml')/patents"/>
+<xsl:template match="patents" mode="cpc">
+  <xsl:param name="patent_id"/>
+  "cpc_code":[
+  <xsl:for-each select="key('cpc-lookup', $patent_id)/code">
+    "<xsl:value-of select="."/>"<xsl:if test="not(position() = last())">,</xsl:if>
+  </xsl:for-each>
+  ],
+  "cpc_facet":[
+  <xsl:for-each select="key('cpc-lookup', $patent_id)/code">
+    <xsl:variable name="cpc-facet-data">
+      <xsl:apply-templates select="$cpc-facet-top" mode="cpc"><xsl:with-param name="cpc_id" select="."/></xsl:apply-templates>  
+    </xsl:variable>
+    <xsl:copy-of select="$cpc-facet-data"/>
+    <xsl:if test="$cpc-facet-data = ''">""</xsl:if>
+    <xsl:if test="not(position() = last())">,</xsl:if>
+  </xsl:for-each>  
+  ],
+</xsl:template>
+
 <xsl:template match="us-bibliographic-data-grant">
-    "id":"<xsl:value-of select="publication-reference/document-id/doc-number" />",
-    "doc_number":"<xsl:value-of select="publication-reference/document-id/doc-number" />",
-    <xsl:apply-templates select="invention-title" />,
-    "assignee_orgname_s":"<xsl:value-of select="assignees/assignee/addressbook/orgname" />",
-    <xsl:apply-templates select="classification-national/main-classification" />,
-    <xsl:for-each select="parties/applicants/applicant/addressbook">
-      <xsl:apply-templates select="." />
-      <xsl:if test="not(position() = last())">,</xsl:if>
-    </xsl:for-each> 
+  <xsl:variable name="doc_number" select="publication-reference/document-id/doc-number"/>
+  "id":"<xsl:value-of select="$doc_number"/>",
+  "doc_number":"<xsl:value-of select="$doc_number"/>",
+  <xsl:apply-templates select="invention-title" />,
+  "assignee_orgname_s":"<xsl:value-of select="assignees/assignee/addressbook/orgname" />",
+  <xsl:apply-templates select="classification-national/main-classification" />,
+  <xsl:apply-templates select="$cpc-top" mode="cpc"><xsl:with-param name="patent_id" select="$doc_number"/></xsl:apply-templates>
+  <xsl:for-each select="parties/applicants/applicant/addressbook">
+    <xsl:apply-templates select="." />
+    <xsl:if test="not(position() = last())">,</xsl:if>
+  </xsl:for-each> 
 </xsl:template>
 
 <!-- Category Lookup -->
@@ -64,7 +98,6 @@
     <xsl:apply-templates select="."/>
     <xsl:if test="not(position() = last())">,</xsl:if>
   </xsl:for-each>
-
 </xsl:template>
 
 <xsl:template match="term">

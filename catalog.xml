@@ -1,0 +1,6 @@
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    
+    <system systemId="us-patent-grant-v42-2006-08-23.dtd" uri="dummy.dtd"/>
+    <!--system systemId="us-patent-grant-v42-2006-08-23.dtd" uri="file:///D:/Clients/USPTO/o19s/dir_search/uspto-solr/RedBook2Solr/delete-me/dummy.dtd"/-->
+
+</catalog>
