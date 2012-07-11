@@ -1,3 +1,9 @@
 StrictHostKeyChecking no
-IdentityFile ~/.ssh/uspto-jenkins_id
+IdentityFile ~/.ssh/jboss_id
 CheckHostIP no
+
+Host github.com
+    HostName github.com
+    PreferredAuthentications publickey
+    IdentityFile ~/.ssh/uspto-jenkins_id
+
