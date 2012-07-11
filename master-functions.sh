@@ -112,7 +112,7 @@ terminate_nonpassing_nodes() {
     ec2-describe-instance-status | grep impaired | cut -f 2 > impaired
 
     # Sometimes EC2 doesn't mount the devices we ask for on startup
-    parallel -S .. --nonall test ! -h /dev/sdi "&&" "echo `wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`" | cut -f 2 >> impaired
+    parallel -S .. --nonall test ! -h /dev/sdi "&&" 'echo `wget -q -O - http://169.254.169.254/latest/meta-data/instance-id`' | cut -f 2 >> impaired
     
     # I wish we could just do the below as a separate job and continue
     # but I've noticed weird I/O blocking when running multiple ec2- programs
