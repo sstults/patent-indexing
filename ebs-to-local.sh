@@ -130,7 +130,7 @@ unmount_detach() {
     done
 }
 
-test() {
+testvols() {
     attach_volumes
     mount_volumes
     unmount_detach
