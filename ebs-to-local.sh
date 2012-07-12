@@ -44,11 +44,11 @@ attach_volumes() {
     log "** attach_volumes $@ **"
     for (( c=0; c<$VOLS; c++ ))
     do
-        ec2-attach-volume ${args[$c]} --instance $EC2_INSTANCE_ID --device /dev/sdf$(( $c + 1 ))
+        ec2-attach-volume ${args[$c]} --instance $EC2_INSTANCE_ID --device /dev/sdg$(( $c + 1 ))
     done
     for (( c=1; c<=$VOLS; c++ ))
     do
-        wait_for_device /dev/sdf${c}
+        wait_for_device /dev/sdg${c}
     done
 }
 
@@ -108,7 +108,7 @@ mount_volumes() {
 
     for (( c=1; c<=$VOLS; c++ ))
     do
-        sudo mount /dev/sdf${c} /media/ebs${c}
+        sudo mount /dev/sdg${c} /media/ebs${c}
     done
 }
 
@@ -116,7 +116,7 @@ unmount_detach() {
     log "** unmount_detach $@ **"
     for (( c=1; c<=$VOLS; c++ ))
     do
-        sudo umount /dev/sdf$(( $c ))
+        sudo umount /dev/sdg$(( $c ))
     done
     
     for (( c=0; c<$VOLS; c++ ))
