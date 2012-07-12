@@ -130,6 +130,12 @@ unmount_detach() {
     done
 }
 
+test() {
+    attach_volumes
+    mount_volumes
+    unmount_detach
+}
+
 setup() {
     create_target_volume
     attach_volume
@@ -144,5 +150,3 @@ process() {
     merge_to_ebs
     unmount_detach
 }
-
-process
