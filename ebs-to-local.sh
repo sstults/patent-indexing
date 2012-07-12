@@ -128,6 +128,15 @@ unmount_detach() {
     do
         wait_for_ebs ATTACHMENT detaching ${args[$c]}
     done
+
+    # Sometimes it takes a little while for the OS to remove the link    
+    for (( c=1; c<=$VOLS; c++ ))
+    do
+        while [ -h /dev/sdg$(( $c )) ]
+        do
+            sleep 5
+        done
+    done
 }
 
 testvols() {
