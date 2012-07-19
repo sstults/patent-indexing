@@ -491,11 +491,7 @@
   </searchComponent>
 
   
-  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler">
-    <lst name="defaults">
-      <str name="update.chain">text_structure</str>
-    </lst>
-  </requestHandler>  
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
   <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler" />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
   <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler" />
